@@ -1,0 +1,6 @@
+{
+  "name": "ديوان VIP - Royal Voice",
+  "description": "منصة غرف صوتية اجتماعية متكاملة مع نظام ملفات شخصية VIP، عضويات يدوية، غرف صوتية حية، ولوحة تحكم للمالك.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
