@@ -99,6 +99,7 @@ export interface UserProfile {
   badges: UserBadge[];
   coins: number;
   email?: string;
+  passcode?: string;
   isBanned?: boolean;
   customNameColor?: string;
   customFrameUrl?: string;

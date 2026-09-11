@@ -18,6 +18,7 @@ import {
   INITIAL_REPORTS,
   INITIAL_ANNOUNCEMENTS,
   VIP_CONFIGS,
+  ADMIN_SECURITY_CONFIG,
 } from './data/initialData';
 import { AppHeader } from './components/navigation/AppHeader';
 import { BottomNav } from './components/navigation/BottomNav';
@@ -29,6 +30,7 @@ import { EditProfileModal } from './components/profile/EditProfileModal';
 import { VIPStoreView } from './components/vip/VIPStoreView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminAuthModal } from './components/admin/AdminAuthModal';
+import { EmailLoginModal } from './components/auth/EmailLoginModal';
 import { LeaderboardView } from './components/leaderboard/LeaderboardView';
 import { DirectMessagesView } from './components/chat/DirectMessagesView';
 import { DeviceFrame } from './components/layout/DeviceFrame';
@@ -71,6 +73,7 @@ export default function App() {
           const owner = merged.find((u) => u.id === 'user_owner');
           if (owner) {
             owner.email = 'Satha4you@gmail.com';
+            owner.passcode = ADMIN_SECURITY_CONFIG.adminPasscode;
             owner.role = 'owner';
             owner.vipTier = 'mythic';
             owner.isVipActive = true;
@@ -79,8 +82,24 @@ export default function App() {
               owner.verificationType = 'gold';
             }
             if ((owner.coins || 0) < 100000) owner.coins = 1000000;
-            return merged.length > 0 ? merged : INITIAL_USERS;
           }
+          const prince = merged.find((u) => u.id === 'user_prince_royal');
+          if (prince) {
+            if (!prince.email) prince.email = 'prince.saud@royal.vip';
+            if (!prince.passcode) prince.passcode = '123456';
+          }
+          const dana = merged.find((u) => u.id === 'user_dana_gold');
+          if (dana) {
+            if (!dana.email) dana.email = 'dana.qatar@royal.vip';
+            if (!dana.passcode) dana.passcode = '123456';
+          }
+
+          // Ensure every user has a passcode
+          merged.forEach((u) => {
+            if (!u.passcode) u.passcode = '123456';
+          });
+
+          return merged.length > 0 ? merged : INITIAL_USERS;
         }
       } catch (e) {
         // fallback
@@ -89,14 +108,9 @@ export default function App() {
     return INITIAL_USERS;
   });
 
-  const [currentUserId, setCurrentUserId] = useState<string>(() => {
-    const saved = localStorage.getItem('royal_voice_current_user_id');
-    const demoUserIds = new Set(['user_gold_1', 'user_silver_1', 'user_bronze_1', 'user_current_visitor', 'user_regular_1']);
-    if (saved && !demoUserIds.has(saved)) {
-      return saved;
-    }
-    return 'user_owner';
-  });
+  // Never persist user login session across visits or logouts:
+  // Every user must log in using email and passcode each time they enter or logout.
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [rooms, setRooms] = useState<VoiceRoom[]>(() => {
     const saved = localStorage.getItem('royal_voice_rooms');
@@ -140,6 +154,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Modals
+  const [showEmailLogin, setShowEmailLogin] = useState<boolean>(true);
   const [showAdmin, setShowAdmin] = useState<boolean>(false);
   const [showAdminAuth, setShowAdminAuth] = useState<boolean>(false);
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
@@ -201,8 +216,31 @@ export default function App() {
     }
   }, [announcements]);
 
-  const currentUser = users.find((u) => u.id === currentUserId) || users[0];
+  // Clean up any persisted login sessions so users must always authenticate on load and logout
+  useEffect(() => {
+    try {
+      localStorage.removeItem('royal_voice_current_user_id');
+      localStorage.removeItem('royal_voice_has_email_login');
+    } catch (e) {
+      console.warn(e);
+    }
+  }, []);
+
+  const currentUser = currentUserId ? (users.find((u) => u.id === currentUserId) || null) : null;
   const pendingRequestsCount = vipRequests.filter((r) => r.status === 'pending').length;
+
+  // Authentication Handlers
+  const handleEmailLoginSuccess = (user: UserProfile) => {
+    setCurrentUserId(user.id);
+    // Explicitly do not persist login session across visits or logouts
+    localStorage.removeItem('royal_voice_current_user_id');
+    localStorage.removeItem('royal_voice_has_email_login');
+    setShowEmailLogin(false);
+  };
+
+  const handleRegisterNewUser = (newUser: UserProfile) => {
+    setUsers((prev) => [newUser, ...prev]);
+  };
 
   // Handlers
   const handleUpdateUser = (userId: string, updates: Partial<UserProfile>) => {
@@ -328,15 +366,19 @@ export default function App() {
 
   const handleLoginAsOwner = () => {
     setCurrentUserId('user_owner');
-    localStorage.setItem('royal_voice_current_user_id', 'user_owner');
+    localStorage.removeItem('royal_voice_current_user_id');
+    localStorage.removeItem('royal_voice_has_email_login');
+    setShowEmailLogin(false);
     playSoundEffect('vip_fanfare');
   };
 
   const handleLogout = () => {
-    setCurrentUserId('user_owner');
-    localStorage.setItem('royal_voice_current_user_id', 'user_owner');
+    setCurrentUserId(null);
+    localStorage.removeItem('royal_voice_current_user_id');
+    localStorage.removeItem('royal_voice_has_email_login');
     setShowAdmin(false);
     setActiveVoiceRoom(null);
+    setShowEmailLogin(true);
     playSoundEffect('bell');
   };
 
@@ -355,6 +397,31 @@ export default function App() {
 
     return matchesCategory && matchesSearch;
   });
+
+  // Gatekeeper: Enforce email-based login on first visit (do not auto-login as owner)
+  if (!currentUser) {
+    return (
+      <DeviceFrame deviceMode={deviceMode}>
+        <div className="relative min-h-screen bg-[#050505] text-[#E0E0E0] flex flex-col justify-between selection:bg-[#D4AF37] selection:text-[#050505] overflow-hidden">
+          <GoldFallingParticles
+            enabled={goldParticlesEnabled}
+            className={deviceMode === 'mobile_shell' ? 'absolute inset-0' : 'fixed inset-0'}
+            opacity={0.6}
+            particleCount={45}
+          />
+          <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 min-h-[500px]">
+            <EmailLoginModal
+              isOpen={true}
+              isMandatory={true}
+              users={users}
+              onLogin={handleEmailLoginSuccess}
+              onRegister={handleRegisterNewUser}
+            />
+          </div>
+        </div>
+      </DeviceFrame>
+    );
+  }
 
   // Full-Page Dedicated Live Voice Room Experience
   if (activeVoiceRoom) {
@@ -453,6 +520,7 @@ export default function App() {
           onToggleGoldParticles={() => setGoldParticlesEnabled((prev) => !prev)}
           onLogout={handleLogout}
           onOpenAdminAuth={() => setShowAdminAuth(true)}
+          onOpenEmailLogin={() => setShowEmailLogin(true)}
         />
 
         {/* Main Content Body */}
@@ -755,6 +823,16 @@ export default function App() {
             setShowAdmin(true);
           }}
           onLoginAsOwner={handleLoginAsOwner}
+        />
+
+        {/* Email Login Modal for switching accounts */}
+        <EmailLoginModal
+          isOpen={showEmailLogin}
+          onClose={() => setShowEmailLogin(false)}
+          users={users}
+          onLogin={handleEmailLoginSuccess}
+          onRegister={handleRegisterNewUser}
+          isMandatory={false}
         />
 
       </div>

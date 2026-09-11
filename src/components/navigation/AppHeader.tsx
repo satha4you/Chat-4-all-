@@ -30,6 +30,7 @@ interface AppHeaderProps {
   onToggleGoldParticles?: () => void;
   onLogout?: () => void;
   onOpenAdminAuth?: () => void;
+  onOpenEmailLogin?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -45,6 +46,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onToggleGoldParticles,
   onLogout,
   onOpenAdminAuth,
+  onOpenEmailLogin,
 }) => {
   const isOwner = currentUser.role === 'owner' || currentUser.id === 'user_owner';
   const isOwnerOrAdmin = isOwner || currentUser.role === 'admin';
