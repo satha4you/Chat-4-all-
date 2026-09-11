@@ -104,6 +104,7 @@ export interface UserProfile {
   customFrameUrl?: string;
   themeColor?: VIPThemeColorKey;
   verified?: boolean;
+  verificationType?: 'gold' | 'blue';
 }
 
 export interface RoomSeat {

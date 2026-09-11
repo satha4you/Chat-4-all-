@@ -22,6 +22,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   onToggleFeatured,
 }) => {
   const activeSpeakers = room.seats.filter((s) => s.user !== null);
+  const hasActiveSpeakers = activeSpeakers.length > 0;
   const isVipOnly = room.type === 'vip';
   const isPrivate = room.type === 'private';
   const isFeatured = room.isFeatured;
@@ -44,6 +45,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     <div
       onClick={() => onJoin(room)}
       className={`group relative overflow-hidden rounded-3xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer flex flex-col justify-between ${
+        hasActiveSpeakers ? 'room-calm-pulse' : ''
+      } ${
         isFeatured
           ? 'bg-gradient-to-b from-[#181305] via-[#0D0D10] to-[#08080A] border-2 border-amber-400/80 shadow-[0_0_22px_rgba(217,119,6,0.25)] hover:border-amber-400'
           : gradientConfig
@@ -51,6 +54,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             : 'bg-[#0A0A0A] hover:bg-[#0F0F0F] border border-zinc-800 hover:border-amber-500/40 hover:shadow-black/60'
       }`}
     >
+      {/* Calm Pulse Ambient Ring for Active Speaking Rooms */}
+      {hasActiveSpeakers && (
+        <div className="absolute inset-0 rounded-3xl pointer-events-none ring-1 ring-amber-400/25 shadow-[inset_0_0_24px_rgba(245,158,11,0.06)] animate-pulse" />
+      )}
+
       {/* Top Accent Gradient Strip */}
       <div
         className={`absolute top-0 inset-x-0 h-1 z-20 ${
@@ -88,8 +96,18 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           )}
           {!isVipOnly && !isPrivate && (
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/50 text-emerald-300 text-[10px] font-bold border border-emerald-800/50 flex items-center gap-1.5 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              مباشر الآن
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>مباشر الآن</span>
+              {hasActiveSpeakers && (
+                <span className="flex items-end gap-0.5 mr-0.5 text-emerald-400 h-3" title="يوجد متحدثين حالياً على المايك">
+                  <span className="w-0.5 bg-emerald-400 rounded-full soundwave-bar-1" />
+                  <span className="w-0.5 bg-emerald-400 rounded-full soundwave-bar-2" />
+                  <span className="w-0.5 bg-emerald-400 rounded-full soundwave-bar-3" />
+                </span>
+              )}
             </span>
           )}
           {room.isPinned && (
@@ -248,6 +266,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             <span className="text-xs text-zinc-400 flex items-center gap-1.5 font-medium">
               <Mic className="w-3.5 h-3.5 text-amber-400" />
               المقاعد متاحة للحديث
+            </span>
+          )}
+          {hasActiveSpeakers && (
+            <span className="text-[10px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+              <span>{activeSpeakers.length} على المايك</span>
             </span>
           )}
           {room.seatCount && (

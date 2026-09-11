@@ -66,14 +66,20 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const demoUserIds = new Set(['user_gold_1', 'user_silver_1', 'user_bronze_1', 'user_current_visitor', 'user_regular_1']);
           const filtered = parsed.filter((u) => !demoUserIds.has(u.id));
-          const owner = filtered.find((u) => u.id === 'user_owner');
+          const existingIds = new Set(filtered.map((u) => u.id));
+          const merged = [...filtered, ...INITIAL_USERS.filter((u) => !existingIds.has(u.id))];
+          const owner = merged.find((u) => u.id === 'user_owner');
           if (owner) {
             owner.email = 'Satha4you@gmail.com';
             owner.role = 'owner';
             owner.vipTier = 'mythic';
             owner.isVipActive = true;
+            owner.verified = true;
+            if (!owner.verificationType) {
+              owner.verificationType = 'gold';
+            }
             if ((owner.coins || 0) < 100000) owner.coins = 1000000;
-            return filtered.length > 0 ? filtered : INITIAL_USERS;
+            return merged.length > 0 ? merged : INITIAL_USERS;
           }
         }
       } catch (e) {

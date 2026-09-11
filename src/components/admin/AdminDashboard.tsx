@@ -21,6 +21,7 @@ import {
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
 import { VIPName } from '../common/VIPName';
+import { VerifiedBadge, VerificationType } from '../common/VerifiedBadge';
 import {
   ShieldAlert,
   Users,
@@ -121,6 +122,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [ownerVipTier, setOwnerVipTier] = useState<VIPTier>(ownerUser.vipTier || 'royal');
   const [ownerCoins, setOwnerCoins] = useState(ownerUser.coins || 150000);
   const [ownerVerified, setOwnerVerified] = useState(ownerUser.verified ?? true);
+  const [ownerVerificationType, setOwnerVerificationType] = useState<VerificationType>(
+    ownerUser.verificationType || 'gold'
+  );
   const [ownerUploadError, setOwnerUploadError] = useState<string | null>(null);
   const [ownerSavedSuccess, setOwnerSavedSuccess] = useState(false);
   const ownerFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -136,7 +140,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setOwnerVipTier(ownerUser.vipTier || 'royal');
     setOwnerCoins(ownerUser.coins || 150000);
     setOwnerVerified(ownerUser.verified ?? true);
-  }, [ownerUser.id, ownerUser.avatar, ownerUser.nickname, ownerUser.coins, ownerUser.vipTier]);
+    setOwnerVerificationType(ownerUser.verificationType || 'gold');
+  }, [ownerUser.id, ownerUser.avatar, ownerUser.nickname, ownerUser.coins, ownerUser.vipTier, ownerUser.verificationType]);
 
   // User management state (for all users)
   const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -145,6 +150,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editDurationMonths, setEditDurationMonths] = useState<number>(3);
   const [editIsVipActive, setEditIsVipActive] = useState<boolean>(true);
   const [editVerified, setEditVerified] = useState<boolean>(false);
+  const [editVerificationType, setEditVerificationType] = useState<VerificationType>('blue');
   const [editCoins, setEditCoins] = useState<number>(0);
   const [editNickname, setEditNickname] = useState<string>('');
   const [editAvatar, setEditAvatar] = useState<string>('');
@@ -200,6 +206,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setEditVipTier(user.vipTier);
     setEditIsVipActive(user.isVipActive);
     setEditVerified(user.verified || false);
+    setEditVerificationType(user.verificationType || (user.role === 'owner' ? 'gold' : 'blue'));
     setEditCoins(user.coins);
     setEditNickname(user.nickname);
     setEditAvatar(user.avatar);
@@ -228,6 +235,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       isVipActive: editVipTier !== 'none' ? editIsVipActive : false,
       vipExpiresAt: expiresAt,
       verified: editVerified,
+      verificationType: editVerificationType,
       coins: editCoins,
     });
 
@@ -270,6 +278,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       vipTier: ownerVipTier,
       isVipActive: true,
       verified: ownerVerified,
+      verificationType: ownerVerificationType,
       coins: ownerCoins,
       country: {
         code: countryObj.code,
@@ -442,6 +451,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     vipTier: ownerVipTier,
                     isVipActive: true,
                     verified: ownerVerified,
+                    verificationType: ownerVerificationType,
                   }}
                   size="2xl"
                   showCrown={true}
@@ -454,6 +464,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <VIPName
                   nickname={ownerNickname || ownerUser.nickname}
                   vipTier={ownerVipTier}
+                  verified={ownerVerified}
+                  verificationType={ownerVerificationType}
+                  role="owner"
                   size="lg"
                   showCrown={true}
                 />
@@ -468,9 +481,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <span>{ARAB_COUNTRIES.find((c) => c.code === ownerCountryCode)?.nameAr || 'السعودية'}</span>
                 </span>
                 {ownerVerified && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-blue-950/40 text-blue-300 border border-blue-800/40 text-[11px] font-bold flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-blue-400" />
-                    موثق رسميًا
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1.5 border shadow-sm ${
+                      ownerVerificationType === 'gold'
+                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                        : 'bg-sky-500/15 text-sky-300 border-sky-500/40 shadow-[0_0_10px_rgba(56,189,248,0.25)]'
+                    }`}
+                  >
+                    <VerifiedBadge type={ownerVerificationType} size="xs" />
+                    <span>{ownerVerificationType === 'gold' ? 'توثيق ذهبي ملكي ⭐' : 'توثيق أزرق معتمد 🛡️'}</span>
                   </span>
                 )}
               </div>
@@ -684,18 +703,78 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Verified Badge Checkbox */}
-              <div className="flex items-center justify-between p-3.5 bg-[#050505] rounded-2xl border border-zinc-800">
-                <div>
-                  <div className="text-xs font-bold text-zinc-200">توثيق الحساب الرسمي (شارة التوثيق الزرقاء 🛡️)</div>
-                  <div className="text-[11px] text-zinc-500">إظهار شارة التوثيق الذهبية/الزرقاء بجانب اسم المالك في كافة الغرف</div>
+              {/* Verified Badge Controls for Owner */}
+              <div className="p-4 bg-[#050505] rounded-2xl border border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-amber-400" />
+                      <span>توثيق حساب المالك الرسمي</span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 mt-0.5">
+                      إظهار شارة التوثيق الرسمية بجانب اسم المالك في كافة الغرف والمحادثات
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={ownerVerified}
+                    onChange={(e) => setOwnerVerified(e.target.checked)}
+                    className="w-5 h-5 accent-amber-500 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={ownerVerified}
-                  onChange={(e) => setOwnerVerified(e.target.checked)}
-                  className="w-5 h-5 accent-amber-500 cursor-pointer"
-                />
+
+                {ownerVerified && (
+                  <div className="pt-3 border-t border-zinc-800/80 space-y-2">
+                    <label className="block text-[11px] font-bold text-zinc-300">
+                      اختر لون ونوع شارة توثيق حساب المالك:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {/* Gold Option */}
+                      <button
+                        type="button"
+                        onClick={() => setOwnerVerificationType('gold')}
+                        className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between cursor-pointer ${
+                          ownerVerificationType === 'gold'
+                            ? 'bg-amber-500/15 border-amber-400/80 shadow-[0_0_15px_rgba(245,158,11,0.2)] text-white'
+                            : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <VerifiedBadge type="gold" size="md" />
+                          <div>
+                            <div className="text-xs font-black text-amber-300">توثيق ذهبي ملكي ⭐</div>
+                            <div className="text-[10px] text-zinc-400">الافتراضي والمعتمد لحساب المالك</div>
+                          </div>
+                        </div>
+                        {ownerVerificationType === 'gold' && (
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" />
+                        )}
+                      </button>
+
+                      {/* Blue Option */}
+                      <button
+                        type="button"
+                        onClick={() => setOwnerVerificationType('blue')}
+                        className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between cursor-pointer ${
+                          ownerVerificationType === 'blue'
+                            ? 'bg-sky-500/15 border-sky-400/80 shadow-[0_0_15px_rgba(56,189,248,0.2)] text-white'
+                            : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <VerifiedBadge type="blue" size="md" />
+                          <div>
+                            <div className="text-xs font-black text-sky-300">توثيق أزرق معتمد 🛡️</div>
+                            <div className="text-[10px] text-zinc-400">الشارة الزرقاء المعتمدة</div>
+                          </div>
+                        </div>
+                        {ownerVerificationType === 'blue' && (
+                          <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Save Button */}
@@ -884,6 +963,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tr>
                   <th className="py-3 px-4">المستخدم</th>
                   <th className="py-3 px-4">رتبة VIP</th>
+                  <th className="py-3 px-4">التوثيق</th>
                   <th className="py-3 px-4">تاريخ الانتهاء</th>
                   <th className="py-3 px-4">المستوى</th>
                   <th className="py-3 px-4">الرصيد 🪙</th>
@@ -918,6 +998,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </td>
                       <td className="py-3 px-4">
                         <VIPBadge tier={user.vipTier} size="xs" />
+                      </td>
+                      <td className="py-3 px-4">
+                        {user.verified ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-sm ${
+                              (user.verificationType || (isOwner ? 'gold' : 'blue')) === 'gold'
+                                ? 'bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
+                                : 'bg-sky-500/15 text-sky-300 border-sky-500/40 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
+                            }`}
+                          >
+                            <VerifiedBadge
+                              type={user.verificationType || (isOwner ? 'gold' : 'blue')}
+                              size="xs"
+                            />
+                            <span>
+                              {(user.verificationType || (isOwner ? 'gold' : 'blue')) === 'gold'
+                                ? 'ذهبي ⭐'
+                                : 'أزرق 🛡️'}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-zinc-500 text-[11px] px-2 py-0.5 rounded-md bg-zinc-900/60 border border-zinc-800/60">
+                            غير موثق
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-zinc-400">
                         {user.vipExpiresAt
@@ -1615,15 +1720,82 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               )}
 
-              {/* Verified account toggle */}
-              <div className="flex items-center justify-between p-3 bg-[#050505] rounded-2xl border border-zinc-800">
-                <span className="text-xs font-bold text-zinc-200">علامة التوثيق الرسمية 🛡️</span>
-                <input
-                  type="checkbox"
-                  checked={editVerified}
-                  onChange={(e) => setEditVerified(e.target.checked)}
-                  className="w-4 h-4 accent-amber-500"
-                />
+              {/* Verified account controls */}
+              <div className="p-3.5 bg-[#050505] rounded-2xl border border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-zinc-200 block">توثيق الحساب الرسمي</span>
+                    <span className="text-[11px] text-zinc-400">تفعيل شارة التوثيق المعتمدة للمستخدم</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editVerified}
+                    onChange={(e) => setEditVerified(e.target.checked)}
+                    className="w-4 h-4 accent-amber-500 cursor-pointer"
+                  />
+                </div>
+
+                {editVerified && (
+                  <div className="pt-2.5 border-t border-zinc-800/80 space-y-2">
+                    <label className="block text-[11px] font-bold text-zinc-300">
+                      اختر لون ونوع شارة التوثيق:
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Gold Option */}
+                      <button
+                        type="button"
+                        onClick={() => setEditVerificationType('gold')}
+                        className={`p-2.5 rounded-xl border text-right transition-all flex items-center justify-between cursor-pointer ${
+                          editVerificationType === 'gold'
+                            ? 'bg-amber-500/20 border-amber-400 text-white shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                            : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <VerifiedBadge type="gold" size="sm" />
+                          <div>
+                            <div className="text-xs font-black text-amber-300">ذهبي ملكي ⭐</div>
+                            <div className="text-[9px] text-zinc-400">شارة ذهبية فاخرة</div>
+                          </div>
+                        </div>
+                        {editVerificationType === 'gold' && (
+                          <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        )}
+                      </button>
+
+                      {/* Blue Option */}
+                      <button
+                        type="button"
+                        onClick={() => setEditVerificationType('blue')}
+                        className={`p-2.5 rounded-xl border text-right transition-all flex items-center justify-between cursor-pointer ${
+                          editVerificationType === 'blue'
+                            ? 'bg-sky-500/20 border-sky-400 text-white shadow-[0_0_12px_rgba(56,189,248,0.25)]'
+                            : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <VerifiedBadge type="blue" size="sm" />
+                          <div>
+                            <div className="text-xs font-black text-sky-300">أزرق معتمد 🛡️</div>
+                            <div className="text-[9px] text-zinc-400">شارة زرقاء رسمية</div>
+                          </div>
+                        </div>
+                        {editVerificationType === 'blue' && (
+                          <span className="w-2 h-2 rounded-full bg-sky-400" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Preview of user with the badge */}
+                    <div className="mt-2 p-2 rounded-lg bg-zinc-900/60 border border-zinc-800 flex items-center justify-between text-[11px]">
+                      <span className="text-zinc-400">المعاينة مع الاسم:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-zinc-100">{editNickname || selectedUserForEdit.nickname}</span>
+                        <VerifiedBadge type={editVerificationType} size="xs" />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Adjust Coins */}

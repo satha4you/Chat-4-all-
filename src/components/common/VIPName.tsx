@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserProfile, VIPTier } from '../../types';
-import { CheckCircle2, Shield } from 'lucide-react';
 import { RealisticCrown } from './RealisticCrown';
+import { VerifiedBadge, VerificationType } from './VerifiedBadge';
 
 interface VIPNameProps {
   user?: UserProfile | null;
@@ -9,6 +9,7 @@ interface VIPNameProps {
   vipTier?: VIPTier;
   role?: string;
   verified?: boolean;
+  verificationType?: VerificationType;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showCrown?: boolean;
   showBadgeIcon?: boolean;
@@ -21,6 +22,7 @@ export const VIPName: React.FC<VIPNameProps> = ({
   vipTier,
   role,
   verified,
+  verificationType,
   size = 'md',
   showCrown = true,
   showBadgeIcon = false,
@@ -30,6 +32,8 @@ export const VIPName: React.FC<VIPNameProps> = ({
   const tier: VIPTier = vipTier || user?.vipTier || 'none';
   const isVerified = verified ?? user?.verified ?? false;
   const userRole = role || user?.role;
+  const effectiveVerificationType: VerificationType =
+    verificationType || user?.verificationType || (userRole === 'owner' ? 'gold' : 'blue');
 
   const sizeClasses = {
     xs: 'text-xs',
@@ -74,11 +78,12 @@ export const VIPName: React.FC<VIPNameProps> = ({
 
       {showCrown && getCrownIcon()}
 
-      {/* Verified Account Badge */}
+      {/* Verified Account Badge (Gold or Blue) */}
       {isVerified && (
-        <span title="حساب موثق رسميًا">
-          <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 fill-sky-500/20 shrink-0" />
-        </span>
+        <VerifiedBadge
+          type={effectiveVerificationType}
+          size={size === 'xl' || size === 'lg' ? 'md' : size === 'md' ? 'sm' : 'xs'}
+        />
       )}
 
       {/* Role Tag (Owner / Admin) */}

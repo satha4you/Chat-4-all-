@@ -4,6 +4,7 @@ import { VIP_CONFIGS } from '../../data/initialData';
 import { RealisticCrown } from '../common/RealisticCrown';
 import { RealisticTierEmblem } from '../common/RealisticTierEmblem';
 import { VIPAvatarFrameSVG } from '../common/VIPAvatarFrameSVG';
+import { VerifiedBadge } from '../common/VerifiedBadge';
 import { Floating3DCrownAnimation } from './Floating3DCrownAnimation';
 import { getVIPTheme, ALL_VIP_THEMES, VIPThemeConfig } from '../../data/vipThemes';
 import { playSoundEffect } from '../../utils/soundEffects';
@@ -377,6 +378,27 @@ export const LuxuryGamingProfile: React.FC<LuxuryGamingProfileProps> = ({
                 >
                   {user.nickname}
                 </h1>
+
+                {/* Verified Account Badge (Gold or Blue) */}
+                {user.verified && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <VerifiedBadge
+                      type={user.verificationType || (user.role === 'owner' ? 'gold' : 'blue')}
+                      size="md"
+                    />
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-black border shadow-sm flex items-center gap-1 ${
+                        (user.verificationType || (user.role === 'owner' ? 'gold' : 'blue')) === 'gold'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/20'
+                          : 'bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-sky-500/20'
+                      }`}
+                    >
+                      {(user.verificationType || (user.role === 'owner' ? 'gold' : 'blue')) === 'gold'
+                        ? 'توثيق ذهبي ملكي ⭐'
+                        : 'توثيق أزرق معتمد 🛡️'}
+                    </span>
+                  </div>
+                )}
                 
                 {/* 3D VIP Plaque with Dynamic Theme */}
                 <span 
