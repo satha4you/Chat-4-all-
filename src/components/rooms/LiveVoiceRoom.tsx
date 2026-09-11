@@ -8,6 +8,8 @@ import { playSoundEffect } from '../../utils/soundEffects';
 import confetti from 'canvas-confetti';
 import { GiftCelebrationOverlay, ActiveGiftEvent } from './effects/GiftCelebrationOverlay';
 import { launchGiftConfetti, getGiftEffectConfig } from '../../utils/giftEffects';
+import { RoomChatInterface } from './RoomChatInterface';
+import { RoomRatingModal } from './RoomRatingModal';
 import {
   Mic,
   MicOff,
@@ -32,6 +34,7 @@ import {
   Eye,
   Zap,
   Coins,
+  Star,
 } from 'lucide-react';
 
 interface LiveVoiceRoomProps {
@@ -50,16 +53,39 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   onUpdateRoom,
 }) => {
   const [currentSeats, setCurrentSeats] = useState<RoomSeat[]>(room.seats);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg_welcome',
-      sender: room.host,
-      content: `مرحبًا بكم في "${room.title}"! يرجى الالتزام بالأدب والاحترام في الحوار.`,
-      type: 'system',
-      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
-  const [inputText, setInputText] = useState('');
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem(`royal_room_chat_${room.id}`);
+      if (saved) {
+        const parsed: ChatMessage[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((m) => !m.roomId || m.roomId === room.id);
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+    return [
+      {
+        id: `msg_welcome_${room.id}`,
+        roomId: room.id,
+        sender: room.host,
+        content: `مرحبًا بكم في "${room.title}"! هذه الدردشة النصية خاصة وحصرية برواد هذه الغرفة فقط.`,
+        type: 'system',
+        timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ];
+  });
+
+  // Sync messages strictly for this room
+  useEffect(() => {
+    try {
+      const roomMsgs = messages.filter((m) => !m.roomId || m.roomId === room.id);
+      localStorage.setItem(`royal_room_chat_${room.id}`, JSON.stringify(roomMsgs));
+    } catch (e) {
+      // ignore
+    }
+  }, [messages, room.id]);
   const [isMicOn, setIsMicOn] = useState(false);
   const [hasRaisedHand, setHasRaisedHand] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
@@ -73,8 +99,47 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const [showAudienceModal, setShowAudienceModal] = useState(false);
   const [selectedSeatAction, setSelectedSeatAction] = useState<RoomSeat | null>(null);
   const [vipEntranceBanner, setVipEntranceBanner] = useState<string | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
 
-  const chatScrollRef = useRef<HTMLDivElement>(null);
+  // Rating computations
+  const ratingsRecord = room.ratings || {};
+  const ratingEntries = Object.values(ratingsRecord) as number[];
+  const roomRatingCount = ratingEntries.length > 0 ? ratingEntries.length : (room.totalRatingsCount || 0);
+  const roomRatingAvg = ratingEntries.length > 0
+    ? (ratingEntries.reduce((sum: number, r: number) => sum + r, 0) / ratingEntries.length)
+    : (room.averageRating !== undefined ? room.averageRating : 5.0);
+  const userExistingRating = ratingsRecord[currentUser.id];
+
+  const handleSaveRoomRating = (stars: number, feedbackTag?: string) => {
+    const updatedRatings = { ...(room.ratings || {}), [currentUser.id]: stars };
+    const values = Object.values(updatedRatings) as number[];
+    const newAvg = values.reduce((sum: number, v: number) => sum + v, 0) / values.length;
+    const newCount = values.length;
+
+    const updatedRoom: VoiceRoom = {
+      ...room,
+      ratings: updatedRatings,
+      averageRating: Number(newAvg.toFixed(1)),
+      totalRatingsCount: newCount,
+    };
+
+    onUpdateRoom(updatedRoom);
+
+    // Announce in room chat
+    const starStr = '⭐'.repeat(stars);
+    const tagStr = feedbackTag ? ` "${feedbackTag}"` : '';
+    const ratingChatMsg: ChatMessage = {
+      id: 'msg_rate_' + Date.now(),
+      roomId: room.id,
+      sender: currentUser,
+      content: `🌟 قام ${currentUser.name} بتقييم الغرفة بـ ${stars} نجوم ${starStr}${tagStr}`,
+      type: 'system',
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages((prev) => [...prev, ratingChatMsg]);
+  };
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -94,13 +159,6 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       return () => clearTimeout(timer);
     }
   }, []);
-
-  // Auto scroll chat to bottom
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   // Real microphone capture when seated and mic is active
   useEffect(() => {
@@ -256,20 +314,36 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     setCurrentSeats(updated);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
+  const handleSendMessage = (content: string) => {
+    if (!content.trim()) return;
 
     const newMsg: ChatMessage = {
       id: 'msg_' + Date.now(),
+      roomId: room.id,
       sender: currentUser,
-      content: inputText.trim(),
+      content: content.trim(),
       type: 'text',
       timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, newMsg]);
-    setInputText('');
+  };
+
+  const handleClearChat = () => {
+    const welcomeMsg: ChatMessage = {
+      id: `msg_welcome_${Date.now()}`,
+      roomId: room.id,
+      sender: room.host,
+      content: `تم مسح سجل الدردشة من قِبل إدارة الغرفة. المحادثة مرئية فقط لرواد «${room.title}».`,
+      type: 'system',
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages([welcomeMsg]);
+    try {
+      localStorage.setItem(`royal_room_chat_${room.id}`, JSON.stringify([welcomeMsg]));
+    } catch (e) {
+      // ignore
+    }
   };
 
   const handleSendGift = (gift: Gift, count: number = giftComboCount) => {
@@ -297,6 +371,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     // 4. Create rich chat record
     const giftMsg: ChatMessage = {
       id: 'msg_gift_' + Date.now(),
+      roomId: room.id,
       sender: currentUser,
       content: `أرسل ${count > 1 ? `x${count} ` : ''}${gift.nameAr} ${gift.icon} إلى ${receiver.nickname}!`,
       type: 'gift',
@@ -375,85 +450,125 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         </div>
       )}
 
-      {/* Top Room Header Bar */}
-      <div className="px-4 py-3 bg-zinc-950/90 border-b border-amber-500/20 backdrop-blur-md flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={onLeave}
-            className="px-3 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
-            title="مغادرة الغرفة والعودة للرئيسية"
-          >
-            <LogOut className="w-3.5 h-3.5 rotate-180 text-rose-300" />
-            <span className="hidden sm:inline">مغادرة الغرفة</span>
-            <span className="sm:hidden">خروج</span>
-          </button>
+      {/* Top Room Header Bar - Structured in two clear rows to prevent any overlap on mobile */}
+      <div className="bg-zinc-950/95 border-b border-amber-500/20 backdrop-blur-md z-20 shrink-0">
+        {/* Row 1: Exit button + Room Title/Host info + Stats (Audience, Coins, Mod) */}
+        <div className="px-3 py-2 flex items-center justify-between gap-2">
+          {/* Right side: Exit Button + Room Title & Host */}
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <button
+              onClick={onLeave}
+              className="px-2.5 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 hover:text-white transition-all text-xs font-bold flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer shadow-sm"
+              title="مغادرة الغرفة والعودة للرئيسية"
+            >
+              <LogOut className="w-3.5 h-3.5 rotate-180 text-rose-300" />
+              <span>خروج</span>
+            </button>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm md:text-base font-black text-zinc-100 truncate">{room.title}</h2>
-              {room.isFeatured && (
-                <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[10px] flex items-center gap-1 shadow-sm shrink-0">
-                  <Sparkles className="w-3 h-3 fill-black" />
-                  غرفة مميزة
-                </span>
-              )}
-              {room.type === 'vip' && <VIPBadge tier="gold" size="xs" showText={false} />}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h2 className="text-xs sm:text-sm font-black text-zinc-100 truncate">{room.title}</h2>
+                {room.type === 'vip' && <VIPBadge tier="gold" size="xs" showText={false} />}
+              </div>
+              <div className="text-[10px] text-zinc-400 flex items-center gap-1 truncate mt-0.5">
+                <span className="text-zinc-500 shrink-0">المضيف:</span>
+                <span className="truncate text-zinc-300 font-bold">{room.host.nickname}</span>
+                {room.host.vipTier && (
+                  <span className="text-[9px] text-amber-400 font-black shrink-0">👑 VIP</span>
+                )}
+              </div>
             </div>
-            <div className="text-[11px] text-zinc-400 flex items-center gap-2">
-              <span>المضيف:</span>
-              <VIPName user={room.host} size="xs" />
+          </div>
+
+          {/* Left side: Listeners, Coins, Moderator */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Audience */}
+            <button
+              onClick={() => setShowAudienceModal(true)}
+              className="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-bold text-zinc-300 flex items-center gap-1 hover:border-amber-500/40 transition-colors"
+              title="قائمة الحضور والمستمعين"
+            >
+              <Users className="w-3 h-3 text-amber-400" />
+              <span>{room.listenersCount + currentSeats.filter((s) => s.user).length}</span>
+            </button>
+
+            {/* Coins */}
+            <div
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-black"
+              title="رصيدك الحالي من الكوينز"
+            >
+              <Coins className="w-3 h-3 text-yellow-400" />
+              <span>{currentUser.coins.toLocaleString('ar-SA')}</span>
             </div>
+
+            {/* Moderator Badge */}
+            {isModerator && (
+              <span
+                className="p-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs font-black"
+                title="أنت مشرف في هذه الغرفة"
+              >
+                <Shield className="w-3.5 h-3.5" />
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Admin Room Upgrade Button */}
-          {(currentUser.role === 'owner' || currentUser.role === 'admin') && (
-            <button
-              onClick={() => {
-                const nextFeatured = !room.isFeatured;
-                onUpdateRoom({ ...room, isFeatured: nextFeatured });
-                if (nextFeatured) {
-                  playSoundEffect('vip_fanfare');
-                  confetti({
-                    particleCount: 75,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                  });
-                } else {
-                  playSoundEffect('bell');
-                }
-              }}
-              className={`px-3 py-1.5 rounded-full text-xs font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer ${
-                room.isFeatured
-                  ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black border border-yellow-300'
-                  : 'bg-[#18150D] hover:bg-[#252012] text-amber-300 border border-amber-500/40'
-              }`}
-              title={room.isFeatured ? 'إلغاء تمييز الغرفة كـ VIP' : 'ترقية الغرفة لتكون مميزة برعاية الإدارة'}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{room.isFeatured ? '⭐ غرفة مميزة' : '⭐ ترقية لمميزة'}</span>
-            </button>
-          )}
-
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-black shadow-sm" title="رصيدك الحالي من الكوينز">
-            <Coins className="w-3.5 h-3.5 text-yellow-400" />
-            <span>{currentUser.coins.toLocaleString('ar-SA')}</span>
-          </div>
-
+        {/* Row 2: Secondary Action & Rating Strip - Clean and never collides with Title */}
+        <div className="px-3 py-1.5 bg-[#0c0d12]/90 border-t border-zinc-800/60 flex items-center justify-between gap-2">
+          {/* Room Star Rating Button */}
           <button
-            onClick={() => setShowAudienceModal(true)}
-            className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-300 flex items-center gap-1.5 hover:border-amber-500/40"
+            onClick={() => setShowRatingModal(true)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shrink-0 ${
+              userExistingRating
+                ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-sm'
+            }`}
+            title={`تقييم الغرفة بالنجوم - متوسط التقييم: ${roomRatingAvg.toFixed(1)} من 5`}
           >
-            <Users className="w-3.5 h-3.5 text-amber-400" />
-            <span>{room.listenersCount + currentSeats.filter((s) => s.user).length}</span>
+            <Star className={`w-3 h-3 ${userExistingRating ? 'fill-amber-400 text-amber-400' : 'fill-black text-black'}`} />
+            <span>{roomRatingAvg.toFixed(1)}</span>
+            <span className="text-[10px] font-medium">
+              {userExistingRating ? `(قيّمت ${userExistingRating}★)` : 'قيّم الغرفة'}
+            </span>
           </button>
 
-          {isModerator && (
-            <span className="p-1.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs font-black" title="أنت مشرف في هذه الغرفة">
-              <Shield className="w-4 h-4" />
-            </span>
-          )}
+          {/* Featured Room Pill & Admin Upgrade Button */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {room.isFeatured && (
+              <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black flex items-center gap-1">
+                <Sparkles className="w-3 h-3 fill-amber-400 text-amber-400" />
+                <span>غرفة مميزة</span>
+              </span>
+            )}
+
+            {(currentUser.role === 'owner' || currentUser.role === 'admin') && (
+              <button
+                onClick={() => {
+                  const nextFeatured = !room.isFeatured;
+                  onUpdateRoom({ ...room, isFeatured: nextFeatured });
+                  if (nextFeatured) {
+                    playSoundEffect('vip_fanfare');
+                    confetti({
+                      particleCount: 75,
+                      spread: 70,
+                      origin: { y: 0.6 },
+                    });
+                  } else {
+                    playSoundEffect('bell');
+                  }
+                }}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                  room.isFeatured
+                    ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700'
+                    : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-black shadow-sm'
+                }`}
+                title={room.isFeatured ? 'إلغاء تمييز الغرفة' : 'ترقية الغرفة لتكون مميزة'}
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>{room.isFeatured ? 'إلغاء التمييز' : '⭐ تمييز الغرفة'}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -461,7 +576,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
         {/* Voice Stage (Host + Seats Grid) */}
-        <div className="flex-1 p-4 overflow-y-auto flex flex-col justify-between border-b md:border-b-0 md:border-l border-zinc-800/80">
+        <div className="flex-1 p-3 sm:p-4 overflow-y-auto flex flex-col justify-between border-b md:border-b-0 md:border-l border-zinc-800/80">
           
           {/* Seats Grid */}
           <div>
@@ -473,14 +588,15 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
               {isSeated && (
                 <button
                   onClick={handleLeaveSeat}
-                  className="text-xs text-rose-400 hover:text-rose-300 underline"
+                  className="text-xs text-rose-400 hover:text-rose-300 underline font-bold"
                 >
                   النزول من المايك
                 </button>
               )}
             </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 gap-y-4 gap-x-2 place-items-center">
+            {/* Compact Seats Grid - 4 Columns, Fits screen comfortably */}
+            <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 gap-y-3.5 gap-x-2 place-items-center">
               {currentSeats.map((seat) => {
                 const isOccupied = seat.user !== null;
                 const isMySeat = seat.user?.id === currentUser.id;
@@ -488,7 +604,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                 return (
                   <div
                     key={seat.seatIndex}
-                    className="flex flex-col items-center group relative cursor-pointer"
+                    className="flex flex-col items-center group relative cursor-pointer select-none"
                     onClick={() => {
                       if (isOccupied) {
                         onUserClick(seat.user!);
@@ -505,7 +621,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                           {seat.user?.id === highlightedSeatUserId && (
                             <>
                               <div className="absolute -inset-2.5 rounded-full border-2 border-amber-400/90 animate-ping pointer-events-none" />
-                              <div className="absolute -inset-1.5 rounded-full ring-4 ring-amber-400/70 shadow-[0_0_25px_rgba(245,158,11,0.85)] pointer-events-none animate-pulse" />
+                              <div className="absolute -inset-1.5 rounded-full ring-4 ring-amber-400/70 shadow-[0_0_20px_rgba(245,158,11,0.85)] pointer-events-none animate-pulse" />
                               <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-yellow-400 text-white text-[9px] font-black shadow-xl animate-bounce flex items-center gap-1 whitespace-nowrap z-25 border border-white/40">
                                 <span>🎁</span>
                                 <span>{activeGiftEvent?.gift.icon || '✨'}</span>
@@ -515,7 +631,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                           )}
                           <AvatarWithFrame
                             user={seat.user!}
-                            size="md"
+                            size="sm"
                             isSpeaking={seat.isSpeaking}
                             audioLevel={seat.audioLevel}
                             showCrown={true}
@@ -523,13 +639,13 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                           {/* Mute indicator on avatar */}
                           {seat.isMuted && (
                             <div className="absolute bottom-0 right-0 p-1 bg-red-600 rounded-full border border-black shadow">
-                              <MicOff className="w-2.5 h-2.5 text-white" />
+                              <MicOff className="w-2 h-2 text-white" />
                             </div>
                           )}
                         </div>
                       ) : (
                         <div
-                          className={`w-14 h-14 rounded-full border-2 border-dashed flex flex-col items-center justify-center transition-all ${
+                          className={`w-13 h-13 rounded-full border-2 border-dashed flex flex-col items-center justify-center transition-all ${
                             seat.isLocked
                               ? 'border-zinc-800 bg-zinc-950/40 text-zinc-600'
                               : 'border-amber-500/40 bg-zinc-900/60 hover:bg-amber-950/40 hover:border-amber-400 text-amber-300'
@@ -548,17 +664,25 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                     </div>
 
                     {/* Seat Label & Nickname */}
-                    <div className="mt-1 text-center max-w-[80px]">
+                    <div className="mt-1 text-center max-w-[76px] truncate">
                       {isOccupied ? (
                         <>
-                          <VIPName user={seat.user!} size="xs" showCrown={false} />
-                          {seat.seatIndex === 0 && (
-                            <span className="block text-[9px] text-amber-400 font-bold">المضيف</span>
+                          <div className="truncate px-0.5">
+                            <VIPName user={seat.user!} size="xs" showCrown={false} />
+                          </div>
+                          {seat.seatIndex === 0 ? (
+                            <span className="block text-[9px] text-amber-400 font-bold leading-tight">المضيف 👑</span>
+                          ) : seat.isSpeaking ? (
+                            <span className="block text-[8px] text-emerald-400 font-bold leading-tight animate-pulse">يتحدث...</span>
+                          ) : (
+                            <span className="block text-[8px] text-zinc-500 leading-tight truncate">
+                              {seat.user?.country?.flag ? `${seat.user.country.flag} ` : ''}مستوى {seat.user?.level || 1}
+                            </span>
                           )}
                         </>
                       ) : (
-                        <span className="text-[10px] text-zinc-500">
-                          {seat.isLocked ? 'مقفل' : 'متاح'}
+                        <span className="text-[10px] text-zinc-500 font-medium">
+                          {seat.isLocked ? 'مقفل' : `مقعد ${seat.seatIndex + 1}`}
                         </span>
                       )}
                     </div>
@@ -570,7 +694,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                           e.stopPropagation();
                           setSelectedSeatAction(seat);
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 -right-1 p-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-600 shadow"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1 p-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-600 shadow z-20"
                         title="إدارة المقعد"
                       >
                         <Shield className="w-3 h-3" />
@@ -629,93 +753,17 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
           </div>
         </div>
 
-        {/* Live Chat Panel */}
-        <div className="w-full md:w-80 h-64 md:h-full bg-[#0E0F17] flex flex-col border-t md:border-t-0 border-zinc-800">
-          
-          {/* Chat Header */}
-          <div className="px-4 py-2.5 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between text-xs text-zinc-400 shrink-0">
-            <span className="font-bold text-zinc-300 flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5 text-amber-400" />
-              الدردشة الحية
-            </span>
-            <span className="text-[10px] text-zinc-500">رسائل مباشرة</span>
-          </div>
-
-          {/* Messages Stream */}
-          <div ref={chatScrollRef} className="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs">
-            {messages.map((msg) => {
-              if (msg.type === 'gift') {
-                return (
-                  <div
-                    key={msg.id}
-                    onClick={() => {
-                      if (msg.giftData) {
-                        handlePreviewGiftEffect(msg.giftData.gift, msg.giftData.count);
-                      }
-                    }}
-                    className="p-2.5 rounded-xl bg-gradient-to-r from-rose-950/70 via-amber-950/50 to-zinc-900 border border-amber-500/40 shadow cursor-pointer hover:border-amber-400 transition-all hover:scale-[1.02] group"
-                    title="انقر لتشغيل التأثير البصري والألعاب النارية"
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1.5 text-amber-300 font-bold text-[11px]">
-                        <GiftIcon className="w-3.5 h-3.5 text-rose-400 group-hover:scale-125 transition-transform" />
-                        <span>{msg.content}</span>
-                      </div>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5 shrink-0">
-                        <span>🎆</span>
-                        <span>تأثير</span>
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-
-              if (msg.type === 'system') {
-                return (
-                  <div key={msg.id} className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 text-[11px] text-amber-200/90 text-center">
-                    {msg.content}
-                  </div>
-                );
-              }
-
-              return (
-                <div key={msg.id} className="flex items-start gap-2 group">
-                  <AvatarWithFrame
-                    user={msg.sender}
-                    size="xs"
-                    showCrown={false}
-                    onClick={() => onUserClick(msg.sender)}
-                  />
-                  <div className="flex-1 min-w-0 bg-zinc-900/60 hover:bg-zinc-900 rounded-xl p-2 border border-zinc-800/60">
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <VIPName user={msg.sender} size="xs" />
-                      <span className="text-[9px] text-zinc-500">{msg.timestamp}</span>
-                    </div>
-                    <p className="text-xs text-zinc-200 break-words leading-relaxed">{msg.content}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Chat Input Bar */}
-          <form onSubmit={handleSendMessage} className="p-2 bg-zinc-950 border-t border-zinc-800 flex items-center gap-1.5 shrink-0">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="اكتب رسالة للغرفة..."
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-500"
-            />
-            <button
-              type="submit"
-              disabled={!inputText.trim()}
-              className="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-bold transition-all shadow"
-            >
-              <Send className="w-4 h-4 rotate-180" />
-            </button>
-          </form>
-        </div>
+        {/* Simple Text-Based Room Chat Interface Scoped to Participants in This Specific Room */}
+        <RoomChatInterface
+          room={room}
+          currentUser={currentUser}
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          onUserClick={onUserClick}
+          onPreviewGiftEffect={handlePreviewGiftEffect}
+          onClearChat={handleClearChat}
+          isModerator={isModerator}
+        />
       </div>
 
       {/* Bottom Floating Mic / Seating Bar */}
@@ -1111,6 +1159,15 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
           </div>
         </div>
       )}
+
+      {/* Room Star Rating Modal */}
+      <RoomRatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        room={room}
+        currentUser={currentUser}
+        onSaveRating={handleSaveRoomRating}
+      />
     </div>
   );
 };

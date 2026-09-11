@@ -8,6 +8,7 @@ import {
   SystemAnnouncement,
   UserBadge,
   VIPConfig,
+  OwnerContactInfo,
 } from '../../types';
 import {
   VIP_CONFIGS,
@@ -57,6 +58,10 @@ import {
   Star,
   Check,
   RotateCcw,
+  Phone,
+  MessageCircle,
+  ExternalLink,
+  Globe,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
@@ -68,6 +73,8 @@ interface AdminDashboardProps {
   vipRequests: VIPSubscriptionRequest[];
   reports: ModerationReport[];
   announcements: SystemAnnouncement[];
+  contactInfo?: OwnerContactInfo;
+  onUpdateContactInfo?: (newInfo: Partial<OwnerContactInfo>) => void;
   onUpdateUser: (userId: string, updates: Partial<UserProfile>) => void;
   onUpdateRoom: (roomId: string, updates: Partial<VoiceRoom>) => void;
   onDeleteRoom: (roomId: string) => void;
@@ -85,6 +92,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   vipRequests,
   reports,
   announcements,
+  contactInfo = OWNER_CONTACT_INFO,
+  onUpdateContactInfo,
   onUpdateUser,
   onUpdateRoom,
   onDeleteRoom,
@@ -148,9 +157,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [broadcastType, setBroadcastType] = useState<'info' | 'vip_promo' | 'system_update'>('vip_promo');
 
   // Contact settings state
-  const [ownerWhatsApp, setOwnerWhatsApp] = useState(OWNER_CONTACT_INFO.whatsappNumber);
-  const [ownerTelegram, setOwnerTelegram] = useState(OWNER_CONTACT_INFO.telegramHandle);
-  const [customInstructions, setCustomInstructions] = useState(OWNER_CONTACT_INFO.customInstructionsAr);
+  const [ownerWhatsApp, setOwnerWhatsApp] = useState(contactInfo.whatsappNumber || OWNER_CONTACT_INFO.whatsappNumber);
+  const [ownerTelegram, setOwnerTelegram] = useState(contactInfo.telegramHandle || OWNER_CONTACT_INFO.telegramHandle);
+  const [ownerEmail, setOwnerEmail] = useState(contactInfo.email || OWNER_CONTACT_INFO.email);
+  const [ownerPhone, setOwnerPhone] = useState(contactInfo.phone || OWNER_CONTACT_INFO.phone);
+  const [ownerSupportHours, setOwnerSupportHours] = useState(contactInfo.supportHours || OWNER_CONTACT_INFO.supportHours || '');
+  const [customInstructions, setCustomInstructions] = useState(contactInfo.customInstructionsAr || OWNER_CONTACT_INFO.customInstructionsAr);
+  const [contactSavedSuccess, setContactSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (contactInfo) {
+      setOwnerWhatsApp(contactInfo.whatsappNumber || '');
+      setOwnerTelegram(contactInfo.telegramHandle || '');
+      setOwnerEmail(contactInfo.email || '');
+      setOwnerPhone(contactInfo.phone || '');
+      setOwnerSupportHours(contactInfo.supportHours || '');
+      setCustomInstructions(contactInfo.customInstructionsAr || '');
+    }
+  }, [contactInfo]);
 
   // Statistics calculation
   const totalUsersCount = users.length;
@@ -956,7 +980,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {rooms.length === 0 ? (
+            <div className="p-8 text-center bg-zinc-900/60 rounded-3xl border border-zinc-800 space-y-3">
+              <Mic className="w-8 h-8 text-amber-400/60 mx-auto" />
+              <h4 className="text-sm font-bold text-zinc-300">لا توجد غرف صوتية نشطة حاليًا</h4>
+              <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                تم تنظيف جميع الغرف التجريبية بالكامل. الغرف التي ينشئها المالك ستظهر هنا فورًا للإشراف، التثبيت، والترقية.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {rooms.map((room) => {
               const isFeatured = room.isFeatured;
               return (
@@ -1058,7 +1091,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1237,66 +1271,201 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          <div>
-            <h3 className="text-sm font-bold text-zinc-200 flex items-center gap-2">
-              <Settings className="w-4 h-4 text-amber-400" />
-              بيانات التواصل للاشتراكات اليدوية (تظهر للمستخدمين)
-            </h3>
-            <p className="text-xs text-zinc-400 mt-1">
-              هذه البيانات تظهر لجميع المستخدمين عند طلب ترقية حساباتهم للتواصل معك مباشرة.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-zinc-200 flex items-center gap-2">
+                <Settings className="w-4 h-4 text-amber-400" />
+                بيانات التواصل الرسمية لطلبات الترقية (تحكم المالك)
+              </h3>
+              <p className="text-xs text-zinc-400 mt-1">
+                هذه البيانات تظهر للأعضاء في متجر VIP، ونافذة التواصل مع المالك لطلب الترقية اليدوية أو الاستفسارات.
+              </p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>قابلة للتعديل والحفظ الفوري</span>
+            </span>
           </div>
 
+          {contactSavedSuccess && (
+            <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center justify-between gap-2 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <span>تم حفظ وتحديث ملف التواصل مع المالك بنجاح! تم نشر التعديلات لجميع الأعضاء.</span>
+              </div>
+              <span className="text-[10px] text-emerald-400 font-mono">حُفظت محليًا وعالميًا</span>
+            </div>
+          )}
+
           <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-amber-400" />
+                  <span>البريد الإلكتروني الرسمي للمالك:</span>
+                </label>
+                <input
+                  type="email"
+                  value={ownerEmail}
+                  onChange={(e) => setOwnerEmail(e.target.value)}
+                  placeholder="Satha4you@gmail.com"
+                  className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-500 dir-ltr text-right"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>رقم واتساب المالك المباشر (مع الرمز الدولي):</span>
+                </label>
+                <input
+                  type="text"
+                  value={ownerWhatsApp}
+                  onChange={(e) => setOwnerWhatsApp(e.target.value)}
+                  placeholder="+966 50 123 4567"
+                  className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 font-mono dir-ltr text-right"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <Send className="w-3.5 h-3.5 text-sky-400" />
+                  <span>معرّف تيليجرام المالك:</span>
+                </label>
+                <input
+                  type="text"
+                  value={ownerTelegram}
+                  onChange={(e) => setOwnerTelegram(e.target.value)}
+                  placeholder="@RoyalVoiceOwner"
+                  className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 font-mono dir-ltr text-right"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>رقم الهاتف المباشر للاتصال (اختياري):</span>
+                </label>
+                <input
+                  type="text"
+                  value={ownerPhone}
+                  onChange={(e) => setOwnerPhone(e.target.value)}
+                  placeholder="+966 50 123 4567"
+                  className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 font-mono dir-ltr text-right"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">البريد الإلكتروني الرسمي:</label>
+              <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>أوقات وساعات التواجد والرد على الطلبات:</span>
+              </label>
               <input
                 type="text"
-                disabled
-                value={ADMIN_SECURITY_CONFIG.adminEmail}
-                className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-amber-300 font-mono opacity-80 cursor-not-allowed"
+                value={ownerSupportHours}
+                onChange={(e) => setOwnerSupportHours(e.target.value)}
+                placeholder="متاح يوميًا من الساعة 10:00 صباحًا حتى 02:00 بعد منتصف الليل"
+                className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">رقم واتساب المالك:</label>
-              <input
-                type="text"
-                value={ownerWhatsApp}
-                onChange={(e) => setOwnerWhatsApp(e.target.value)}
-                className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 font-mono dir-ltr text-right"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">معرّف تيليجرام المالك:</label>
-              <input
-                type="text"
-                value={ownerTelegram}
-                onChange={(e) => setOwnerTelegram(e.target.value)}
-                className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 font-mono dir-ltr text-right"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">تعليمات الدفع والتحويل الخارجي:</label>
+              <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>تعليمات وتوجيهات طلب ترقية VIP وطرق الدفع الخارجي:</span>
+              </label>
               <textarea
                 rows={3}
                 value={customInstructions}
                 onChange={(e) => setCustomInstructions(e.target.value)}
-                className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 resize-none"
+                placeholder="يرجى التواصل عبر البريد الرسمي أو الواتساب مع ذكر اسم المستخدم ونوع باقة VIP المطلوبة..."
+                className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
               />
             </div>
 
-            <button
-              onClick={() => {
-                alert('تم حفظ إعدادات التواصل بنجاح!');
-              }}
-              className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs shadow-md cursor-pointer"
-            >
-              حفظ الإعدادات
-            </button>
+            {/* Quick Preview Box */}
+            <div className="p-3.5 rounded-2xl bg-[#08090E] border border-zinc-800/80 space-y-2">
+              <div className="text-[11px] font-bold text-zinc-400 flex items-center gap-1">
+                <span>معاينة ما يراه المستخدم في نافذة التواصل:</span>
+              </div>
+              <div className="flex flex-wrap gap-2 text-[11px]">
+                <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-300 font-mono">
+                  ✉️ {ownerEmail || 'Satha4you@gmail.com'}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-emerald-400 font-mono">
+                  💬 {ownerWhatsApp || 'لا يوجد'}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-sky-400 font-mono">
+                  ✈️ {ownerTelegram || 'لا يوجد'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const cleanWa = ownerWhatsApp.replace(/[^0-9]/g, '');
+                  const cleanTg = ownerTelegram.replace('@', '');
+                  const updated: OwnerContactInfo = {
+                    email: ownerEmail.trim() || 'Satha4you@gmail.com',
+                    whatsappNumber: ownerWhatsApp.trim(),
+                    whatsappLink: cleanWa ? `https://wa.me/${cleanWa}` : '',
+                    telegramHandle: ownerTelegram.trim().startsWith('@') ? ownerTelegram.trim() : `@${ownerTelegram.trim()}`,
+                    telegramLink: cleanTg ? `https://t.me/${cleanTg}` : '',
+                    phone: ownerPhone.trim() || ownerWhatsApp.trim(),
+                    supportHours: ownerSupportHours.trim(),
+                    customInstructionsAr: customInstructions.trim(),
+                    customInstructionsEn: contactInfo.customInstructionsEn,
+                    isActive: true,
+                  };
+
+                  if (onUpdateContactInfo) {
+                    onUpdateContactInfo(updated);
+                  }
+                  
+                  setContactSavedSuccess(true);
+                  playSoundEffect('vip_fanfare');
+                  confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                  });
+
+                  setTimeout(() => {
+                    setContactSavedSuccess(false);
+                  }, 4000);
+                }}
+                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+              >
+                <Check className="w-4 h-4 text-black stroke-[3]" />
+                <span>حفظ وتعميم معلومات التواصل رسميًا</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOwnerWhatsApp(OWNER_CONTACT_INFO.whatsappNumber);
+                  setOwnerTelegram(OWNER_CONTACT_INFO.telegramHandle);
+                  setOwnerEmail(OWNER_CONTACT_INFO.email);
+                  setOwnerPhone(OWNER_CONTACT_INFO.phone);
+                  setOwnerSupportHours(OWNER_CONTACT_INFO.supportHours || '');
+                  setCustomInstructions(OWNER_CONTACT_INFO.customInstructionsAr);
+                  if (onUpdateContactInfo) {
+                    onUpdateContactInfo(OWNER_CONTACT_INFO);
+                  }
+                  playSoundEffect('bell');
+                }}
+                className="px-4 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="استعادة القيم الافتراضية"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>استعادة الافتراضي</span>
+              </button>
+            </div>
           </div>
+
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserProfile, VIPTier, VIPSubscriptionRequest } from '../../types';
+import { UserProfile, VIPTier, VIPSubscriptionRequest, OwnerContactInfo } from '../../types';
 import { VIP_CONFIGS, OWNER_CONTACT_INFO } from '../../data/initialData';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
@@ -32,12 +32,14 @@ import { playSoundEffect } from '../../utils/soundEffects';
 
 interface VIPStoreViewProps {
   currentUser: UserProfile;
+  contactInfo?: OwnerContactInfo;
   onSubmitRequest: (request: VIPSubscriptionRequest) => void;
   onOpenDirectContact: () => void;
 }
 
 export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
   currentUser,
+  contactInfo = OWNER_CONTACT_INFO,
   onSubmitRequest,
   onOpenDirectContact,
 }) => {
@@ -190,32 +192,59 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
-              {OWNER_CONTACT_INFO.customInstructionsAr}
+              {contactInfo.customInstructionsAr || OWNER_CONTACT_INFO.customInstructionsAr}
             </p>
-            <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-300">
-              <span className="text-zinc-500">البريد الرسمي:</span>
-              <span className="font-mono text-amber-400 font-bold">{OWNER_CONTACT_INFO.email}</span>
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-300 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-zinc-500">البريد الرسمي:</span>
+                <span className="font-mono text-amber-400 font-bold">{contactInfo.email || OWNER_CONTACT_INFO.email}</span>
+              </div>
+              {contactInfo.whatsappNumber && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-zinc-500">• واتساب:</span>
+                  <span className="font-mono text-emerald-400 dir-ltr">{contactInfo.whatsappNumber}</span>
+                </div>
+              )}
+              {contactInfo.telegramHandle && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-zinc-500">• تيليجرام:</span>
+                  <span className="font-mono text-sky-400 dir-ltr">{contactInfo.telegramHandle}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 w-full md:w-auto flex-wrap">
+          <button
+            type="button"
+            onClick={onOpenDirectContact}
+            className="flex-1 md:flex-none px-3.5 py-2.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-500/40 text-xs font-black flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
+          >
+            <Crown className="w-4 h-4 text-amber-400" />
+            <span>ملف تواصل المالك</span>
+          </button>
+
           <a
-            href={`mailto:${OWNER_CONTACT_INFO.email}?subject=طلب ترقية VIP ديوان الصوت`}
+            href={`mailto:${contactInfo.email || OWNER_CONTACT_INFO.email}?subject=طلب ترقية VIP ديوان الصوت`}
             className="flex-1 md:flex-none px-3.5 py-2.5 rounded-xl bg-[#141414] hover:bg-[#1E1E1E] text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
           >
             <Mail className="w-4 h-4 text-amber-400" />
             <span>راسل المالك</span>
           </a>
-          <a
-            href={OWNER_CONTACT_INFO.whatsappLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-md transition-transform hover:scale-105"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>تواصل عبر واتساب</span>
-          </a>
+
+          {(contactInfo.whatsappLink || contactInfo.whatsappNumber) && (
+            <a
+              href={contactInfo.whatsappLink || `https://wa.me/${contactInfo.whatsappNumber.replace(/[^0-9]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-md transition-transform hover:scale-105"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>واتساب المالك</span>
+            </a>
+          )}
+
           <button
             onClick={() => setShowRequestModal(true)}
             className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
@@ -225,6 +254,7 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
           </button>
         </div>
       </div>
+
 
       {/* MASTER ROYAL VIP CARD & FRAME SHOWCASE (1:1 Reference Photo Match) */}
       <div className="relative p-5 sm:p-7 rounded-3xl bg-gradient-to-b from-[#140624] via-[#0E031A] to-[#080210] border-2 border-amber-500/50 shadow-2xl overflow-hidden">

@@ -34,6 +34,7 @@ interface UserProfileModalProps {
   onOpenAdminEdit?: (user: UserProfile) => void;
   onLogout?: () => void;
   onOpenVipStore?: () => void;
+  onOpenOwnerContact?: () => void;
   onUpdateThemeColor?: (colorKey: VIPThemeColorKey) => void;
 }
 
@@ -49,6 +50,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onOpenAdminEdit,
   onLogout,
   onOpenVipStore,
+  onOpenOwnerContact,
   onUpdateThemeColor,
 }) => {
   if (!isOpen || !user) return null;
@@ -303,47 +305,65 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Action Buttons for Visiting other users */}
           {!isSelf && (
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <button
-                onClick={handleFollow}
-                className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md ${
-                  isFollowing
-                    ? 'bg-[#161616] hover:bg-[#202020] text-zinc-300 border border-zinc-700'
-                    : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black font-extrabold shadow-amber-500/10'
-                }`}
-              >
-                {isFollowing ? (
-                  <>
-                    <UserCheck className="w-4 h-4 text-emerald-400" />
-                    متابَع
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4" />
-                    متابعة
-                  </>
-                )}
-              </button>
+            <>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button
+                  onClick={handleFollow}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md ${
+                    isFollowing
+                      ? 'bg-[#161616] hover:bg-[#202020] text-zinc-300 border border-zinc-700'
+                      : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black font-extrabold shadow-amber-500/10'
+                  }`}
+                >
+                  {isFollowing ? (
+                    <>
+                      <UserCheck className="w-4 h-4 text-emerald-400" />
+                      متابَع
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      متابعة
+                    </>
+                  )}
+                </button>
 
-              <button
-                onClick={() => setShowGiftSelector(!showGiftSelector)}
-                className="py-2.5 px-3 rounded-xl text-xs font-bold bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 text-white flex items-center justify-center gap-1.5 shadow-md transition-transform active:scale-95"
-              >
-                <GiftIcon className="w-4 h-4" />
-                إهداء هدية
-              </button>
+                <button
+                  onClick={() => setShowGiftSelector(!showGiftSelector)}
+                  className="py-2.5 px-3 rounded-xl text-xs font-bold bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 text-white flex items-center justify-center gap-1.5 shadow-md transition-transform active:scale-95"
+                >
+                  <GiftIcon className="w-4 h-4" />
+                  إهداء هدية
+                </button>
 
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenDirectChat?.(user);
-                }}
-                className="py-2.5 px-3 rounded-xl text-xs font-bold bg-[#140826] hover:bg-[#200D3D] text-zinc-200 border border-zinc-700 flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <MessageSquare className="w-4 h-4 text-sky-400" />
-                مراسلة
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenDirectChat?.(user);
+                  }}
+                  className="py-2.5 px-3 rounded-xl text-xs font-bold bg-[#140826] hover:bg-[#200D3D] text-zinc-200 border border-zinc-700 flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4 text-sky-400" />
+                  مراسلة
+                </button>
+              </div>
+
+              {/* If inspecting the Platform Owner, provide a direct channel button */}
+              {(user.role === 'owner' || user.id === 'user_owner') && onOpenOwnerContact && (
+                <div className="mt-2.5">
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenOwnerContact();
+                    }}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black flex items-center justify-center gap-2 shadow-md transition-all"
+                  >
+                    <Crown className="w-4 h-4 text-black" />
+                    <span>معلومات التواصل الرسمية مع المالك (واتساب / بريد / تيليجرام)</span>
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           {/* Action Buttons for Own Account (isSelf) */}
@@ -369,6 +389,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <span>متجر VIP الملكي</span>
                 </button>
               </div>
+
+              {onOpenOwnerContact && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenOwnerContact();
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center justify-center gap-2 shadow-sm transition-all"
+                >
+                  <Crown className="w-4 h-4 text-amber-400" />
+                  <span>التواصل مع المالك لطلب ترقية VIP أو استفسار</span>
+                </button>
+              )}
 
               {/* Distinct Logout Button for User Profile */}
               {onLogout && (

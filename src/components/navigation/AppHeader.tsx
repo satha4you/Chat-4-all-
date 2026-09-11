@@ -75,20 +75,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
 
         {/* Center Quick Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Create Room Button */}
           <button
             onClick={onOpenCreateRoom}
-            className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black font-extrabold text-xs shadow-md shadow-amber-500/10 flex items-center gap-1.5 transition-transform active:scale-95"
+            className="px-2.5 sm:px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black font-extrabold text-xs shadow-md shadow-amber-500/10 flex items-center gap-1 sm:gap-1.5 transition-transform active:scale-95 shrink-0"
           >
-            <Plus className="w-4 h-4 text-black stroke-[3]" />
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black stroke-[3]" />
             <span className="hidden sm:inline">غرفة جديدة</span>
           </button>
 
-          {/* Device Frame Switcher */}
+          {/* Device Frame Switcher (Hidden on narrow mobile to keep header clean) */}
           <button
             onClick={onToggleDeviceMode}
-            className="p-2 rounded-xl bg-[#120B20] hover:bg-[#1A102E] text-zinc-300 hover:text-amber-400 border border-zinc-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
+            className="hidden sm:flex p-2 rounded-xl bg-[#120B20] hover:bg-[#1A102E] text-zinc-300 hover:text-amber-400 border border-zinc-800 text-xs font-bold items-center gap-1.5 transition-colors"
             title={deviceMode === 'mobile_shell' ? 'التبديل إلى عرض الويب المتجاوب' : 'التبديل إلى معاينة تطبيق الجوال'}
           >
             {deviceMode === 'mobile_shell' ? (
@@ -104,11 +104,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             )}
           </button>
 
-          {/* Ambient Royal Gold Falling Particles Toggle */}
+          {/* Ambient Royal Gold Falling Particles Toggle (Hidden on narrow mobile) */}
           {onToggleGoldParticles && (
             <button
               onClick={onToggleGoldParticles}
-              className={`p-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
+              className={`hidden md:flex p-2 rounded-xl border text-xs font-bold items-center gap-1.5 transition-all ${
                 goldParticlesEnabled
                   ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_12px_rgba(212,175,55,0.2)]'
                   : 'bg-[#120B20] hover:bg-[#1A102E] text-zinc-400 border-zinc-800'
@@ -130,7 +130,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {isOwnerOrAdmin ? (
             <button
               onClick={onOpenAdmin}
-              className="relative px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#200B3B] to-[#361162] hover:from-[#2B0E50] text-purple-200 border border-purple-400/50 text-xs font-black flex items-center gap-1.5 shadow-md transition-all hover:scale-105"
+              className="relative px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#200B3B] to-[#361162] hover:from-[#2B0E50] text-purple-200 border border-purple-400/50 text-xs font-black flex items-center gap-1 sm:gap-1.5 shadow-md transition-all hover:scale-105 shrink-0"
             >
               <Crown className="w-3.5 h-3.5 text-yellow-400" />
               <span>لوحة المالك</span>
@@ -142,7 +142,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onOpenAdminAuth && (
               <button
                 onClick={onOpenAdminAuth}
-                className="px-2.5 py-1.5 rounded-xl bg-[#140826] hover:bg-[#200D3D] text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1 transition-all"
+                className="px-2.5 py-1.5 rounded-xl bg-[#140826] hover:bg-[#200D3D] text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1 transition-all shrink-0"
                 title="تسجيل الدخول كمالك الحساب"
               >
                 <LogIn className="w-3.5 h-3.5 text-amber-400" />
@@ -168,7 +168,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* User Avatar & Name */}
           <div
             onClick={onOpenProfile}
-            className="flex items-center gap-2 cursor-pointer group"
+            className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0 px-1"
           >
             <AvatarWithFrame
               user={currentUser}

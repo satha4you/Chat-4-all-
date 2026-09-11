@@ -4,7 +4,7 @@ import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
 import { VIPName } from '../common/VIPName';
 import { INITIAL_GIFTS } from '../../data/initialData';
-import { MessageSquare, Send, Gift as GiftIcon, Sparkles, Check, CheckCheck } from 'lucide-react';
+import { MessageSquare, Send, Gift as GiftIcon, Sparkles, Check, CheckCheck, Crown } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
 
@@ -118,31 +118,58 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/40">
-          {otherUsers.map((user) => (
-            <div
-              key={user.id}
-              onClick={() => setSelectedUser(user)}
-              className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${
-                selectedUser.id === user.id
-                  ? 'bg-amber-950/40 border-r-2 border-amber-400'
-                  : 'hover:bg-zinc-900/60'
-              }`}
-            >
-              <AvatarWithFrame user={user} size="sm" showCrown={true} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <VIPName user={user} size="xs" />
-                  <VIPBadge tier={user.vipTier} size="xs" showText={false} />
-                </div>
-                <p className="text-[11px] text-zinc-400 truncate mt-0.5">{user.status || user.bio || 'متاح في الديوان'}</p>
-              </div>
+          {otherUsers.length === 0 ? (
+            <div className="p-6 text-center text-zinc-400 space-y-2">
+              <MessageSquare className="w-8 h-8 mx-auto text-amber-500/60" />
+              <p className="text-xs font-bold text-zinc-300">لا توجد محادثات أعضاء حاليًا</p>
+              <p className="text-[11px] text-zinc-500 leading-relaxed">
+                تم تنظيف الحسابات التجريبية. ستظهر رسائل واستفسارات الأعضاء الجدد فور انضمامهم للمنصة.
+              </p>
             </div>
-          ))}
+          ) : (
+            otherUsers.map((user) => (
+              <div
+                key={user.id}
+                onClick={() => setSelectedUser(user)}
+                className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${
+                  selectedUser.id === user.id
+                    ? 'bg-amber-950/40 border-r-2 border-amber-400'
+                    : 'hover:bg-zinc-900/60'
+                }`}
+              >
+                <AvatarWithFrame user={user} size="sm" showCrown={true} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <VIPName user={user} size="xs" />
+                    <VIPBadge tier={user.vipTier} size="xs" showText={false} />
+                  </div>
+                  <p className="text-[11px] text-zinc-400 truncate mt-0.5">{user.status || user.bio || 'متاح في الديوان'}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-[#0B0C12] overflow-hidden">
+      {otherUsers.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#0B0C12] text-zinc-400 space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-b from-amber-500/20 to-zinc-900 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-xl">
+            <Crown className="w-8 h-8 text-amber-400" />
+          </div>
+          <div className="max-w-md space-y-2">
+            <h3 className="text-base font-black text-white">صندوق المحادثات والرسائل الخاصة للمالك</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              أنت مسجل حاليًا بصفتك المالك الرسمي العام <span className="text-amber-400 font-bold">{currentUser.nickname}</span>.
+              يمكنك استقبال رسائل الأعضاء، الرد على الاستفسارات، وإهداء الهدايا الفاخرة مباشرة هنا.
+            </p>
+          </div>
+          <div className="px-4 py-2 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-[11px] text-zinc-400">
+            ✉️ البريد الرسمي المعتمد للتواصل: <span className="text-amber-300 font-mono">Satha4you@gmail.com</span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col bg-[#0B0C12] overflow-hidden">
         
         {/* Chat Top Header */}
         <div className="p-3.5 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between shrink-0">
@@ -267,6 +294,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
           </button>
         </form>
       </div>
+      )}
     </div>
   );
 };

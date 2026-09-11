@@ -148,6 +148,10 @@ export interface VoiceRoom {
   createdAt: string;
   tags: string[];
   backgroundTheme: string;
+  cardGradient?: string; // تدرج لون الغلاف (Gradient) لبطاقة الغرفة
+  ratings?: Record<string, number>; // معرف المستخدم -> التقييم من 1 إلى 5
+  averageRating?: number; // متوسط تقييم الغرفة بالنجوم
+  totalRatingsCount?: number; // إجمالي عدد المقيمين
 }
 
 export interface VIPSubscriptionRequest {
@@ -192,3 +196,16 @@ export interface SystemAnnouncement {
 export type ActiveTab = 'rooms' | 'vip_club' | 'top_users' | 'direct_messages' | 'my_profile';
 
 export type DeviceViewMode = 'responsive' | 'mobile_shell';
+
+export interface OwnerContactInfo {
+  whatsappNumber: string;
+  whatsappLink: string;
+  telegramHandle: string;
+  telegramLink: string;
+  email: string;
+  phone: string;
+  customInstructionsAr: string;
+  customInstructionsEn?: string;
+  supportHours?: string;
+  isActive?: boolean;
+}

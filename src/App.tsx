@@ -64,13 +64,17 @@ export default function App() {
       try {
         const parsed: UserProfile[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Ensure owner has required role and email without wiping user's customized nickname
-          const owner = parsed.find((u) => u.id === 'user_owner');
+          const demoUserIds = new Set(['user_gold_1', 'user_silver_1', 'user_bronze_1', 'user_current_visitor', 'user_regular_1']);
+          const filtered = parsed.filter((u) => !demoUserIds.has(u.id));
+          const owner = filtered.find((u) => u.id === 'user_owner');
           if (owner) {
             owner.email = 'Satha4you@gmail.com';
             owner.role = 'owner';
+            owner.vipTier = 'mythic';
+            owner.isVipActive = true;
+            if ((owner.coins || 0) < 100000) owner.coins = 1000000;
+            return filtered.length > 0 ? filtered : INITIAL_USERS;
           }
-          return parsed;
         }
       } catch (e) {
         // fallback
@@ -80,12 +84,31 @@ export default function App() {
   });
 
   const [currentUserId, setCurrentUserId] = useState<string>(() => {
-    return localStorage.getItem('royal_voice_current_user_id') || 'user_current_visitor';
+    const saved = localStorage.getItem('royal_voice_current_user_id');
+    const demoUserIds = new Set(['user_gold_1', 'user_silver_1', 'user_bronze_1', 'user_current_visitor', 'user_regular_1']);
+    if (saved && !demoUserIds.has(saved)) {
+      return saved;
+    }
+    return 'user_owner';
   });
 
   const [rooms, setRooms] = useState<VoiceRoom[]>(() => {
     const saved = localStorage.getItem('royal_voice_rooms');
-    return saved ? JSON.parse(saved) : INITIAL_ROOMS;
+    if (saved) {
+      try {
+        const parsed: VoiceRoom[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const demoRoomIds = new Set(['room_diwan_royal', 'room_tarab_oud', 'room_poetry_lounge', 'room_tech_future']);
+          const filtered = parsed.filter((r) => !demoRoomIds.has(r.id));
+          if (filtered.length > 0) {
+            return filtered;
+          }
+        }
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_ROOMS;
   });
 
   const [vipRequests, setVipRequests] = useState<VIPSubscriptionRequest[]>(() => {
@@ -304,9 +327,8 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    const targetGuestId = 'user_current_visitor';
-    setCurrentUserId(targetGuestId);
-    localStorage.setItem('royal_voice_current_user_id', targetGuestId);
+    setCurrentUserId('user_owner');
+    localStorage.setItem('royal_voice_current_user_id', 'user_owner');
     setShowAdmin(false);
     setActiveVoiceRoom(null);
     playSoundEffect('bell');
@@ -593,14 +615,24 @@ export default function App() {
                 </div>
 
                 {filteredRooms.length === 0 ? (
-                  <div className="p-12 text-center bg-[#0A0A0A] rounded-3xl border border-zinc-800/80 space-y-3">
-                    <Mic className="w-10 h-10 text-zinc-600 mx-auto" />
-                    <h4 className="text-sm font-bold text-zinc-400">لا توجد غرف صوتية تطابق البحث حاليًا</h4>
+                  <div className="p-8 sm:p-12 text-center bg-gradient-to-b from-[#161105]/80 via-[#0A0A0A] to-[#07070A] rounded-3xl border border-amber-500/30 space-y-4 shadow-2xl">
+                    <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-200 p-3.5 text-black shadow-lg shadow-amber-500/20 flex items-center justify-center">
+                      <Crown className="w-9 h-9 text-black" />
+                    </div>
+                    <div className="max-w-md mx-auto space-y-1.5">
+                      <h4 className="text-base sm:text-lg font-black text-white">
+                        مرحبًا بك يا {currentUser.nickname}! 👑
+                      </h4>
+                      <p className="text-xs text-zinc-400 leading-relaxed">
+                        تم تنظيف جميع الغرف والحسابات التجريبية بنجاح. حساب المالك الرسمي هو الأساسي والمفعل في كل شيء (التحكم الكامل، إنشاء الغرف، واختبار الهدايا والصوت).
+                      </p>
+                    </div>
                     <button
                       onClick={() => setShowCreateRoom(true)}
-                      className="px-4 py-2 rounded-xl bg-amber-500 text-black text-xs font-black"
+                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 text-black text-xs sm:text-sm font-black shadow-lg shadow-amber-500/20 flex items-center gap-2 mx-auto transition-all hover:scale-105 active:scale-95"
                     >
-                      أنشئ أول غرفة صوتية الآن
+                      <Plus className="w-4 h-4 stroke-[3]" />
+                      <span>تدشين أول غرفة صوتية رسمية 🎙️</span>
                     </button>
                   </div>
                 ) : (
