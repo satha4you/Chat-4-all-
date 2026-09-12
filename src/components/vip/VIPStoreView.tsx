@@ -25,7 +25,8 @@ import {
   Gem,
   Award,
   Shield,
-  Layers
+  Layers,
+  Edit
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
@@ -35,6 +36,7 @@ interface VIPStoreViewProps {
   contactInfo?: OwnerContactInfo;
   onSubmitRequest: (request: VIPSubscriptionRequest) => void;
   onOpenDirectContact: () => void;
+  onEditContactInfo?: () => void;
 }
 
 export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
@@ -42,7 +44,9 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
   contactInfo = OWNER_CONTACT_INFO,
   onSubmitRequest,
   onOpenDirectContact,
+  onEditContactInfo,
 }) => {
+  const isOwner = currentUser.role === 'owner' || currentUser.id === 'user_owner';
   const [selectedTier, setSelectedTier] = useState<VIPTier>('gold');
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [durationMonths, setDurationMonths] = useState<number>(3);
@@ -216,6 +220,18 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 w-full md:w-auto flex-wrap">
+          {isOwner && onEditContactInfo && (
+            <button
+              type="button"
+              onClick={onEditContactInfo}
+              className="flex-1 md:flex-none px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
+              title="تعديل معلومات التواصل الرسمية في المنصة"
+            >
+              <Edit className="w-4 h-4 text-black" />
+              <span>تعديل التواصل ✏️</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onOpenDirectContact}

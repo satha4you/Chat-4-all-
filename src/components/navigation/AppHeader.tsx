@@ -13,7 +13,8 @@ import {
   Sparkles,
   Coins,
   LogOut,
-  LogIn
+  LogIn,
+  Phone
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -31,6 +32,7 @@ interface AppHeaderProps {
   onLogout?: () => void;
   onOpenAdminAuth?: () => void;
   onOpenEmailLogin?: () => void;
+  onEditContactInfo?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -47,6 +49,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onLogout,
   onOpenAdminAuth,
   onOpenEmailLogin,
+  onEditContactInfo,
 }) => {
   const isOwner = currentUser.role === 'owner' || currentUser.id === 'user_owner';
   const isOwnerOrAdmin = isOwner || currentUser.role === 'admin';
@@ -130,16 +133,29 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
           {/* Admin Dashboard Trigger (Owner Panel) */}
           {isOwnerOrAdmin ? (
-            <button
-              onClick={onOpenAdmin}
-              className="relative px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#200B3B] to-[#361162] hover:from-[#2B0E50] text-purple-200 border border-purple-400/50 text-xs font-black flex items-center gap-1 sm:gap-1.5 shadow-md transition-all hover:scale-105 shrink-0"
-            >
-              <Crown className="w-3.5 h-3.5 text-yellow-400" />
-              <span>لوحة المالك</span>
-              {pendingRequestsCount > 0 && (
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping absolute -top-0.5 -right-0.5" />
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={onOpenAdmin}
+                className="relative px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#200B3B] to-[#361162] hover:from-[#2B0E50] text-purple-200 border border-purple-400/50 text-xs font-black flex items-center gap-1 sm:gap-1.5 shadow-md transition-all hover:scale-105 shrink-0"
+              >
+                <Crown className="w-3.5 h-3.5 text-yellow-400" />
+                <span>لوحة المالك</span>
+                {pendingRequestsCount > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping absolute -top-0.5 -right-0.5" />
+                )}
+              </button>
+
+              {isOwner && onEditContactInfo && (
+                <button
+                  onClick={onEditContactInfo}
+                  className="hidden sm:flex px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold items-center gap-1 transition-all shrink-0"
+                  title="تعديل معلومات التواصل الرسمية (واتساب، تيليجرام، هاتف)"
+                >
+                  <Phone className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden md:inline">تعديل التواصل</span>
+                </button>
               )}
-            </button>
+            </div>
           ) : (
             onOpenAdminAuth && (
               <button

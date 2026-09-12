@@ -10,6 +10,7 @@ import {
   DeviceViewMode,
   Gift,
   RoomCategory,
+  OwnerContactInfo,
 } from './types';
 import {
   INITIAL_USERS,
@@ -19,6 +20,7 @@ import {
   INITIAL_ANNOUNCEMENTS,
   VIP_CONFIGS,
   ADMIN_SECURITY_CONFIG,
+  OWNER_CONTACT_INFO,
 } from './data/initialData';
 import { AppHeader } from './components/navigation/AppHeader';
 import { BottomNav } from './components/navigation/BottomNav';
@@ -31,6 +33,7 @@ import { VIPStoreView } from './components/vip/VIPStoreView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminAuthModal } from './components/admin/AdminAuthModal';
 import { EmailLoginModal } from './components/auth/EmailLoginModal';
+import { OwnerContactModal } from './components/common/OwnerContactModal';
 import { LeaderboardView } from './components/leaderboard/LeaderboardView';
 import { DirectMessagesView } from './components/chat/DirectMessagesView';
 import { DeviceFrame } from './components/layout/DeviceFrame';
@@ -144,6 +147,19 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_ANNOUNCEMENTS;
   });
 
+  // Owner Contact Information (Persisted across sessions)
+  const [contactInfo, setContactInfo] = useState<OwnerContactInfo>(() => {
+    const saved = localStorage.getItem('royal_voice_owner_contact');
+    if (saved) {
+      try {
+        return { ...OWNER_CONTACT_INFO, ...JSON.parse(saved) };
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    return OWNER_CONTACT_INFO;
+  });
+
   // UI state
   const [activeTab, setActiveTab] = useState<ActiveTab>('rooms');
   const [deviceMode, setDeviceMode] = useState<DeviceViewMode>('responsive');
@@ -157,6 +173,8 @@ export default function App() {
   const [showAdminAuth, setShowAdminAuth] = useState<boolean>(false);
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
   const [showEditProfile, setShowEditProfile] = useState<boolean>(false);
+  const [showOwnerContactModal, setShowOwnerContactModal] = useState<boolean>(false);
+  const [ownerContactEditMode, setOwnerContactEditMode] = useState<boolean>(false);
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
   const [inspectedUser, setInspectedUser] = useState<UserProfile | null>(null);
   const [targetDmUser, setTargetDmUser] = useState<UserProfile | null>(null);
@@ -213,6 +231,14 @@ export default function App() {
       console.warn(e);
     }
   }, [announcements]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('royal_voice_owner_contact', JSON.stringify(contactInfo));
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [contactInfo]);
 
   // Clean up any persisted login sessions so users must always authenticate on load and logout
   useEffect(() => {
@@ -344,10 +370,63 @@ export default function App() {
     setAnnouncements((prev) => [newAnn, ...prev]);
   };
 
+  const handleUpdateContactInfo = (newInfo: Partial<OwnerContactInfo>) => {
+    setContactInfo((prev) => {
+      const updated = { ...prev, ...newInfo };
+      try {
+        localStorage.setItem('royal_voice_owner_contact', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+  };
+
+  const handleOpenOwnerContact = (editMode = false) => {
+    setOwnerContactEditMode(editMode);
+    setShowOwnerContactModal(true);
+  };
+
+  // Ban user directly from admin table or reports
+  const handleBanUser = (userId: string, isBanned: boolean) => {
+    handleUpdateUser(userId, { isBanned });
+    if (isBanned && activeVoiceRoom) {
+      if (
+        activeVoiceRoom.speakers.some((s) => s.id === userId) ||
+        activeVoiceRoom.listeners.some((l) => l.id === userId)
+      ) {
+        setActiveVoiceRoom((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            speakers: prev.speakers.filter((s) => s.id !== userId),
+            listeners: prev.listeners.filter((l) => l.id !== userId),
+          };
+        });
+      }
+    }
+  };
+
+  // Permanently delete user from the entire website
+  const handleDeleteUser = (userId: string) => {
+    if (userId === 'user_owner') return;
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    if (activeVoiceRoom) {
+      setActiveVoiceRoom((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          speakers: prev.speakers.filter((s) => s.id !== userId),
+          listeners: prev.listeners.filter((l) => l.id !== userId),
+        };
+      });
+    }
+  };
+
   const handleResolveReport = (reportId: string, action: 'ban_user' | 'dismiss') => {
     const rep = reports.find((r) => r.id === reportId);
     if (action === 'ban_user' && rep?.reportedUser) {
-      handleUpdateUser(rep.reportedUser.id, { isBanned: true });
+      handleBanUser(rep.reportedUser.id, true);
     }
     setReports((prev) =>
       prev.map((r) => (r.id === reportId ? { ...r, status: action === 'ban_user' ? 'resolved' : 'dismissed' } : r))
@@ -519,6 +598,7 @@ export default function App() {
           onLogout={handleLogout}
           onOpenAdminAuth={() => setShowAdminAuth(true)}
           onOpenEmailLogin={() => setShowEmailLogin(true)}
+          onEditContactInfo={() => handleOpenOwnerContact(true)}
         />
 
         {/* Main Content Body */}
@@ -532,7 +612,11 @@ export default function App() {
               vipRequests={vipRequests}
               reports={reports}
               announcements={announcements}
+              contactInfo={contactInfo}
+              onUpdateContactInfo={handleUpdateContactInfo}
               onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              onBanUser={handleBanUser}
               onUpdateRoom={handleUpdateRoom}
               onDeleteRoom={handleDeleteRoom}
               onApproveVipRequest={handleApproveVipRequest}
@@ -545,8 +629,10 @@ export default function App() {
             /* VIP Club & Manual Subscription View */
             <VIPStoreView
               currentUser={currentUser}
+              contactInfo={contactInfo}
               onSubmitRequest={(req) => setVipRequests((prev) => [req, ...prev])}
-              onOpenDirectContact={() => {}}
+              onOpenDirectContact={() => handleOpenOwnerContact(false)}
+              onEditContactInfo={() => handleOpenOwnerContact(true)}
             />
           ) : activeTab === 'top_users' ? (
             /* Leaderboard of Top VIP Supporters */
@@ -576,6 +662,8 @@ export default function App() {
                 }}
                 onOpenVipStore={() => setActiveTab('vip_club')}
                 onOpenAdminEdit={() => setShowAdmin(true)}
+                onOpenOwnerContact={() => handleOpenOwnerContact(false)}
+                onEditContactInfo={() => handleOpenOwnerContact(true)}
                 onUpdateThemeColor={(colorKey) => handleUpdateUser(currentUser.id, { themeColor: colorKey })}
                 onLogout={handleLogout}
               />
@@ -780,6 +868,8 @@ export default function App() {
             setInspectedUser(null);
             setActiveTab('vip_club');
           }}
+          onOpenOwnerContact={() => handleOpenOwnerContact(false)}
+          onEditContactInfo={() => handleOpenOwnerContact(true)}
           onUpdateThemeColor={(colorKey) => {
             if (inspectedUser) {
               handleUpdateUser(inspectedUser.id, { themeColor: colorKey });
@@ -831,6 +921,24 @@ export default function App() {
           onLogin={handleEmailLoginSuccess}
           onRegister={handleRegisterNewUser}
           isMandatory={false}
+        />
+
+        {/* Global Owner Contact Information Modal (View & Edit Anywhere) */}
+        <OwnerContactModal
+          isOpen={showOwnerContactModal}
+          onClose={() => setShowOwnerContactModal(false)}
+          contactInfo={contactInfo}
+          currentUser={currentUser}
+          initialEditMode={ownerContactEditMode}
+          onUpdateContactInfo={handleUpdateContactInfo}
+          onOpenAdminDashboard={() => {
+            setShowOwnerContactModal(false);
+            setShowAdmin(true);
+          }}
+          onRequestUpgrade={() => {
+            setShowOwnerContactModal(false);
+            setActiveTab('vip_club');
+          }}
         />
 
       </div>

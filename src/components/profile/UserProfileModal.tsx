@@ -35,6 +35,7 @@ interface UserProfileModalProps {
   onLogout?: () => void;
   onOpenVipStore?: () => void;
   onOpenOwnerContact?: () => void;
+  onEditContactInfo?: () => void;
   onUpdateThemeColor?: (colorKey: VIPThemeColorKey) => void;
 }
 
@@ -51,12 +52,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onLogout,
   onOpenVipStore,
   onOpenOwnerContact,
+  onEditContactInfo,
   onUpdateThemeColor,
 }) => {
   if (!isOpen || !user) return null;
 
   const isSelf = currentUser.id === user.id;
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'owner';
+  const isOwner = currentUser.role === 'owner' || currentUser.id === 'user_owner';
   
   // Interactive Tier Preview State
   const [previewTier, setPreviewTier] = useState<VIPTier | null>(null);
@@ -262,13 +265,37 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           )}
 
           {activeTab === 'badges' && (
-            <div className="grid grid-cols-3 gap-2">
-              {user.badges.map((badge, idx) => (
-                <div key={idx} className="p-2.5 rounded-xl bg-[#0D0519] border border-amber-500/20 text-center">
-                  <div className="text-xl mb-1">🏅</div>
-                  <div className="text-[10px] font-bold text-zinc-200">{badge}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {Array.isArray(user.badges) && user.badges.length > 0 ? (
+                user.badges.map((badge: any, idx: number) => {
+                  const badgeName = typeof badge === 'string' ? badge : (badge?.nameAr || badge?.nameEn || 'شارة ملكية');
+                  const badgeIcon = typeof badge === 'object' && badge?.icon ? badge.icon : '🏅';
+                  const badgeDesc = typeof badge === 'object' && badge?.descriptionAr ? badge.descriptionAr : '';
+                  const badgeColor = typeof badge === 'object' && badge?.color ? badge.color : 'from-amber-500 to-yellow-400';
+
+                  return (
+                    <div
+                      key={badge?.id || idx}
+                      className="p-3 rounded-2xl bg-[#0D0519] border border-amber-500/25 hover:border-amber-500/50 text-center flex flex-col items-center transition-all group"
+                    >
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${badgeColor} flex items-center justify-center text-xl mb-1.5 shadow-md shadow-amber-900/20 group-hover:scale-105 transition-transform`}>
+                        {badgeIcon}
+                      </div>
+                      <div className="text-xs font-bold text-amber-200 line-clamp-1">{badgeName}</div>
+                      {badgeDesc && (
+                        <div className="text-[10px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
+                          {badgeDesc}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-2 sm:col-span-3 text-center py-6 text-zinc-500 text-xs bg-[#0D0519] rounded-xl border border-zinc-800">
+                  <Award className="w-8 h-8 text-amber-500/30 mx-auto mb-2" />
+                  <p>لا توجد أوسمة معتمدة لهذا الحساب حالياً</p>
                 </div>
-              ))}
+              )}
             </div>
           )}
 
@@ -389,6 +416,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <span>متجر VIP الملكي</span>
                 </button>
               </div>
+
+              {isOwner && onEditContactInfo && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onEditContactInfo();
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black shadow-md flex items-center justify-center gap-2 transition-all"
+                >
+                  <Edit3 className="w-4 h-4 text-black" />
+                  <span>تعديل معلومات التواصل الرسمية للمنصة 📱</span>
+                </button>
+              )}
 
               {onOpenOwnerContact && (
                 <button

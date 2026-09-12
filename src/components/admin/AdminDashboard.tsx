@@ -63,6 +63,8 @@ import {
   MessageCircle,
   ExternalLink,
   Globe,
+  Ban,
+  UserX,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
@@ -83,6 +85,8 @@ interface AdminDashboardProps {
   onRejectVipRequest: (requestId: string, reason?: string) => void;
   onAddAnnouncement: (announcement: SystemAnnouncement) => void;
   onResolveReport: (reportId: string, action: 'ban_user' | 'dismiss') => void;
+  onDeleteUser?: (userId: string) => void;
+  onBanUser?: (userId: string, isBanned: boolean) => void;
   onCloseAdmin: () => void;
 }
 
@@ -102,6 +106,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onRejectVipRequest,
   onAddAnnouncement,
   onResolveReport,
+  onDeleteUser,
+  onBanUser,
   onCloseAdmin,
 }) => {
   const [activeTab, setActiveTab] = useState<
@@ -146,6 +152,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // User management state (for all users)
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<UserProfile | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [editIsBanned, setEditIsBanned] = useState<boolean>(false);
   const [editVipTier, setEditVipTier] = useState<VIPTier>('gold');
   const [editDurationMonths, setEditDurationMonths] = useState<number>(3);
   const [editIsVipActive, setEditIsVipActive] = useState<boolean>(true);
@@ -203,6 +211,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleOpenUserEdit = (user: UserProfile) => {
     setSelectedUserForEdit(user);
+    setEditIsBanned(user.isBanned || false);
     setEditVipTier(user.vipTier);
     setEditIsVipActive(user.isVipActive);
     setEditVerified(user.verified || false);
@@ -237,6 +246,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       verified: editVerified,
       verificationType: editVerificationType,
       coins: editCoins,
+      isBanned: editIsBanned,
     });
 
     playSoundEffect('vip_fanfare');
@@ -359,6 +369,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('settings')}
+            className="px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors"
+            title="تعديل معلومات التواصل الرسمية في الموقع"
+          >
+            <Phone className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">تعديل التواصل 📱</span>
+          </button>
           <button
             onClick={() => setActiveTab('owner_profile')}
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-transform active:scale-95"
@@ -962,6 +980,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <thead className="bg-zinc-900/80 text-zinc-400 border-b border-zinc-800">
                 <tr>
                   <th className="py-3 px-4">المستخدم</th>
+                  <th className="py-3 px-4">الحالة</th>
                   <th className="py-3 px-4">رتبة VIP</th>
                   <th className="py-3 px-4">التوثيق</th>
                   <th className="py-3 px-4">تاريخ الانتهاء</th>
@@ -995,6 +1014,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <div className="text-[10px] text-zinc-500 font-mono">@{user.username}</div>
                           </div>
                         </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {user.isBanned ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-black shadow-sm">
+                            <Ban className="w-3 h-3 text-rose-400" />
+                            <span>محظور 🚫</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span>نشط ✅</span>
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <VIPBadge tier={user.vipTier} size="xs" />
@@ -1034,8 +1066,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <td className="py-3 px-4 font-bold text-yellow-400">Lv.{user.level}</td>
                       <td className="py-3 px-4 font-bold text-amber-300">{user.coins.toLocaleString()}</td>
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          {isOwner && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {isOwner ? (
                             <button
                               onClick={() => setActiveTab('owner_profile')}
                               className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-xs font-black flex items-center gap-1 shadow-sm"
@@ -1043,14 +1075,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <Crown className="w-3 h-3" />
                               <span>تعديل المالك</span>
                             </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleOpenUserEdit(user)}
+                                className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1"
+                                title="تعديل الحساب والصورة"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">تعديل</span>
+                              </button>
+
+                              {/* Ban / Unban Toggle Button */}
+                              <button
+                                onClick={() => {
+                                  if (onBanUser) {
+                                    onBanUser(user.id, !user.isBanned);
+                                  } else {
+                                    onUpdateUser(user.id, { isBanned: !user.isBanned });
+                                  }
+                                  playSoundEffect('bell');
+                                }}
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border transition-all ${
+                                  user.isBanned
+                                    ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/40'
+                                }`}
+                                title={user.isBanned ? 'فك الحظر عن المستخدم' : 'حظر المستخدم من المنصة'}
+                              >
+                                <Ban className="w-3.5 h-3.5" />
+                                <span>{user.isBanned ? 'فك الحظر' : 'حظر'}</span>
+                              </button>
+
+                              {/* Permanent Delete Button */}
+                              <button
+                                onClick={() => setUserToDelete(user)}
+                                className="px-2.5 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 border border-red-800/50 text-xs font-bold flex items-center gap-1 transition-all"
+                                title="حذف الحساب نهائياً من الموقع"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>حذف</span>
+                              </button>
+                            </>
                           )}
-                          <button
-                            onClick={() => handleOpenUserEdit(user)}
-                            className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                            <span>تعديل الحساب والصورة</span>
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1809,6 +1876,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 />
               </div>
 
+              {/* Ban Toggle inside edit modal */}
+              {selectedUserForEdit.role !== 'owner' && selectedUserForEdit.id !== 'user_owner' && (
+                <div className="p-3 bg-[#050505] rounded-2xl border border-zinc-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Ban className={`w-4 h-4 ${editIsBanned ? 'text-rose-400' : 'text-zinc-500'}`} />
+                    <div>
+                      <div className="text-xs font-bold text-zinc-200">حظر العضو من الموقع</div>
+                      <div className="text-[10px] text-zinc-400">منعه من دخول الغرف والمحادثات الصوتية</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditIsBanned(!editIsBanned)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      editIsBanned
+                        ? 'bg-rose-500/30 border-rose-500 text-rose-200 shadow-sm'
+                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {editIsBanned ? '🚫 محظور حالياً' : '✅ نشط وغير محظور'}
+                  </button>
+                </div>
+              )}
+
+              {/* Danger Zone: Delete user */}
+              {selectedUserForEdit.role !== 'owner' && selectedUserForEdit.id !== 'user_owner' && (
+                <div className="pt-2 border-t border-red-950/60 flex items-center justify-between">
+                  <div className="text-[11px] text-red-400">إجراء المالك النهائي:</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const u = selectedUserForEdit;
+                      setSelectedUserForEdit(null);
+                      setUserToDelete(u);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-700/60 text-xs font-bold flex items-center gap-1.5 transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>حذف هذا الحساب نهائياً</span>
+                  </button>
+                </div>
+              )}
+
               {/* Submit */}
               <div className="pt-2 flex items-center justify-end gap-3">
                 <button
@@ -1827,6 +1937,62 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* User Deletion Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-[#0C0D14] border border-red-600/50 rounded-3xl p-6 shadow-2xl text-zinc-100 overflow-hidden text-right">
+            <div className="flex items-center gap-3 pb-3 border-b border-zinc-800">
+              <div className="w-10 h-10 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">تأكيد حذف الحساب نهائياً</h3>
+                <p className="text-xs text-red-300/80">إجراء المالك - مسح تام من المنصة</p>
+              </div>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <div className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center gap-3">
+                <AvatarWithFrame user={userToDelete} size="md" />
+                <div>
+                  <div className="font-bold text-sm text-zinc-100">{userToDelete.nickname}</div>
+                  <div className="text-xs text-zinc-400 font-mono">@{userToDelete.username}</div>
+                  <div className="text-[10px] text-zinc-500 mt-0.5">معرف الحساب: {userToDelete.id}</div>
+                </div>
+              </div>
+
+              <p className="text-xs text-zinc-300 leading-relaxed bg-red-950/20 p-3 rounded-xl border border-red-900/30">
+                هل أنت متأكد تماماً من رغبتك في حذف هذا الحساب نهائياً؟ سيتم مسح بيانات المستخدم تماماً، وطرده من أي غرفة نشطة، ولن يتمكن من الدخول بهذا الحساب مرة أخرى.
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-zinc-800 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold transition-colors"
+              >
+                إلغاء التراجع
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteUser) {
+                    onDeleteUser(userToDelete.id);
+                  }
+                  playSoundEffect('bell');
+                  setUserToDelete(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black shadow-lg shadow-red-950 flex items-center gap-1.5 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>نعم، احذف الحساب نهائياً</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

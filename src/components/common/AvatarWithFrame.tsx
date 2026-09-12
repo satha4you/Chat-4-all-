@@ -87,38 +87,38 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
     },
   }[size];
 
-  // Frame styling based on VIP tier
+  // Frame styling based on VIP tier with radiant golden aura
   const getFrameStyles = () => {
     switch (tier) {
       case 'mythic':
         return {
-          wrapper: 'p-1.5 bg-gradient-to-tr from-[#FFDF73] via-[#9333EA] via-[#FDE047] to-[#3B0764] rounded-full shadow-[0_0_36px_rgba(168,85,247,0.95)] ring-2 ring-[#FFDF73]',
+          wrapper: 'p-1.5 bg-gradient-to-tr from-[#FFE58F] via-[#A855F7] via-[#FBBF24] to-[#4C1D95] rounded-full shadow-[0_0_36px_rgba(245,158,11,0.95),0_0_18px_rgba(234,179,8,0.8)] ring-2 ring-[#FFDF73]',
           border: 'border-2 border-[#FFFBEB]',
-          glowColor: '#C084FC',
+          glowColor: '#F59E0B',
         };
       case 'royal':
         return {
-          wrapper: 'p-1.5 bg-gradient-to-tr from-[#7E22CE] via-[#EAB308] via-[#C084FC] to-[#260447] rounded-full shadow-[0_0_28px_rgba(147,51,234,0.85)] ring-2 ring-amber-300',
+          wrapper: 'p-1.5 bg-gradient-to-tr from-[#9333EA] via-[#F59E0B] via-[#C084FC] to-[#3B0764] rounded-full shadow-[0_0_30px_rgba(245,158,11,0.9),0_0_16px_rgba(234,179,8,0.7)] ring-2 ring-amber-300',
           border: 'border-2 border-amber-200',
-          glowColor: '#A855F7',
+          glowColor: '#EAB308',
         };
       case 'gold':
         return {
-          wrapper: 'p-1 bg-gradient-to-tr from-[#EAB308] via-[#9333EA] via-[#FBBF24] to-[#3B0764] rounded-full shadow-[0_0_24px_rgba(234,179,8,0.75)] ring-1.5 ring-yellow-300',
+          wrapper: 'p-1 bg-gradient-to-tr from-[#EAB308] via-[#F59E0B] via-[#FDE047] to-[#78350F] rounded-full shadow-[0_0_26px_rgba(245,158,11,0.85),0_0_14px_rgba(234,179,8,0.7)] ring-2 ring-yellow-300',
           border: 'border-2 border-yellow-100',
-          glowColor: '#9333EA',
+          glowColor: '#F59E0B',
         };
       case 'silver':
         return {
-          wrapper: 'p-1 bg-gradient-to-tr from-[#C084FC] via-[#FEF08A] to-[#581C87] rounded-full shadow-[0_0_20px_rgba(192,132,252,0.7)] ring-1.5 ring-purple-300',
-          border: 'border-2 border-purple-200',
-          glowColor: '#C084FC',
+          wrapper: 'p-1 bg-gradient-to-tr from-[#E2E8F0] via-[#FBBF24] to-[#64748B] rounded-full shadow-[0_0_22px_rgba(245,158,11,0.75),0_0_12px_rgba(234,179,8,0.6)] ring-1.5 ring-amber-300',
+          border: 'border-2 border-slate-100',
+          glowColor: '#F59E0B',
         };
       case 'bronze':
         return {
-          wrapper: 'p-1 bg-gradient-to-tr from-[#B45309] via-[#A855F7] to-[#F59E0B] rounded-full shadow-[0_0_18px_rgba(168,85,247,0.65)] ring-1.5 ring-amber-400',
+          wrapper: 'p-1 bg-gradient-to-tr from-[#B45309] via-[#F59E0B] to-[#78350F] rounded-full shadow-[0_0_20px_rgba(245,158,11,0.7),0_0_10px_rgba(217,119,6,0.6)] ring-1.5 ring-amber-400',
           border: 'border-2 border-amber-300',
-          glowColor: '#A855F7',
+          glowColor: '#D97706',
         };
       default:
         return {
@@ -157,6 +157,18 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
       {/* Ornate Royal Golden Purple VIP Profile Frame */}
       {tier !== 'none' && (
         <VIPAvatarFrameSVG tier={tier} size={size} showTopCrown={false} />
+      )}
+
+      {/* Radiant Golden Glow Aura for VIP Subscribers */}
+      {tier !== 'none' && (
+        <div
+          className="absolute -inset-1 rounded-full pointer-events-none transition-opacity duration-300 z-0 animate-pulse"
+          style={{
+            background: 'radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(245, 158, 11, 0.25) 50%, transparent 80%)',
+            boxShadow: '0 0 16px 4px rgba(245, 158, 11, 0.7), 0 0 28px 8px rgba(234, 179, 8, 0.35)',
+            filter: 'drop-shadow(0 0 8px #F59E0B)',
+          }}
+        />
       )}
 
       {/* Speaking Active Audio Wave Ring */}

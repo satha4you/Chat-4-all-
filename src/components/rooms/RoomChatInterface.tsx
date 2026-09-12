@@ -169,51 +169,65 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
             const isMe = msg.sender.id === currentUser.id;
             const isHostMsg = msg.sender.id === room.host.id;
             const isModMsg = !isHostMsg && (room.moderators.includes(msg.sender.id) || msg.sender.role === 'owner');
+            const isSenderVip = msg.sender.vipTier && msg.sender.vipTier !== 'none';
 
             return (
               <div
                 key={msg.id}
-                className={`flex items-start gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
+                className={`flex items-start gap-2.5 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
               >
-                <AvatarWithFrame
-                  user={msg.sender}
-                  size="xs"
-                  showCrown={false}
-                  onClick={() => onUserClick(msg.sender)}
-                />
+                {/* Avatar with Golden Glow Effect for VIP subscribers */}
+                <div
+                  className={`relative shrink-0 transition-all duration-300 ${
+                    isSenderVip
+                      ? 'p-0.5 rounded-full ring-2 ring-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.85)] bg-gradient-to-tr from-amber-500 to-yellow-300 animate-pulse'
+                      : ''
+                  }`}
+                >
+                  <AvatarWithFrame
+                    user={msg.sender}
+                    size="xs"
+                    showCrown={false}
+                    onClick={() => onUserClick(msg.sender)}
+                  />
+                </div>
 
                 <div
-                  className={`flex-1 min-w-0 rounded-2xl p-2.5 border transition-colors ${
+                  className={`flex-1 min-w-0 rounded-2xl p-3 border transition-colors shadow-sm ${
                     isMe
-                      ? 'bg-amber-950/40 border-amber-500/30 text-right'
-                      : 'bg-zinc-900/70 hover:bg-zinc-900 border-zinc-800/80'
+                      ? 'bg-[#241A0B] hover:bg-[#2C1F0D] border-amber-500/60 shadow-amber-950/40 text-right'
+                      : 'bg-[#161826] hover:bg-[#1C1F32] border-zinc-700/80'
                   }`}
                 >
                   {/* Sender Name & Badges */}
-                  <div className={`flex items-center justify-between gap-1 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex items-center justify-between gap-1 mb-1.5 ${isMe ? 'flex-row-reverse' : ''}`}>
                     <div className="flex items-center gap-1.5 truncate">
                       <VIPName user={msg.sender} size="xs" />
                       {isHostMsg && (
-                        <span className="px-1 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 text-[9px] font-bold text-amber-400 shrink-0">
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/25 border border-amber-500/50 text-[10px] font-black text-amber-300 shrink-0">
                           المضيف 👑
                         </span>
                       )}
                       {isModMsg && (
-                        <span className="px-1 py-0.2 rounded bg-blue-500/20 border border-blue-500/30 text-[9px] font-bold text-blue-400 shrink-0">
+                        <span className="px-1.5 py-0.5 rounded-md bg-blue-500/25 border border-blue-500/50 text-[10px] font-black text-blue-300 shrink-0">
                           مشرف 🛡️
                         </span>
                       )}
                       {isMe && (
-                        <span className="text-[9px] text-zinc-500 font-normal">
+                        <span className="text-[10px] text-amber-300/80 font-bold">
                           (أنت)
                         </span>
                       )}
                     </div>
-                    <span className="text-[9px] text-zinc-500 shrink-0">{msg.timestamp}</span>
+                    <span className={`text-[10px] font-mono shrink-0 ${isMe ? 'text-amber-200/80' : 'text-zinc-400'}`}>
+                      {msg.timestamp}
+                    </span>
                   </div>
 
-                  {/* Message Text Content */}
-                  <p className="text-xs text-zinc-100 break-words leading-relaxed whitespace-pre-wrap">
+                  {/* Message Text Content - High contrast for crystal-clear readability */}
+                  <p className={`text-[13px] break-words leading-relaxed whitespace-pre-wrap select-text tracking-wide ${
+                    isMe ? 'text-amber-50 font-semibold' : 'text-white font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]'
+                  }`}>
                     {msg.content}
                   </p>
                 </div>
@@ -234,13 +248,13 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
         </button>
       )}
 
-      {/* Quick Greetings Pills Bar */}
-      <div className="px-2 py-1.5 bg-zinc-950 border-t border-zinc-800/70 overflow-x-auto flex items-center gap-1.5 scrollbar-none shrink-0">
+      {/* Quick Greetings Pills Bar - High contrast buttons */}
+      <div className="px-2 py-2 bg-[#0A0B12] border-t border-zinc-700/60 overflow-x-auto flex items-center gap-1.5 scrollbar-none shrink-0">
         {QUICK_GREETINGS.map((phrase, idx) => (
           <button
             key={idx}
             onClick={() => handleQuickGreeting(phrase)}
-            className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-medium whitespace-nowrap shrink-0 transition-colors active:scale-95"
+            className="px-3 py-1.5 rounded-xl bg-[#181B2B] hover:bg-[#24283D] border border-zinc-600/80 text-xs text-zinc-100 font-bold whitespace-nowrap shrink-0 transition-all hover:text-white hover:border-amber-400/60 active:scale-95 shadow-sm"
           >
             {phrase}
           </button>
@@ -249,13 +263,13 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
 
       {/* Emoji Picker Popup Bar */}
       {showEmojiPicker && (
-        <div className="px-2 py-2 bg-zinc-900 border-t border-zinc-800 grid grid-cols-5 gap-1.5 shrink-0 animate-in fade-in slide-in-from-bottom-2">
+        <div className="px-2 py-2 bg-[#121420] border-t border-zinc-700 grid grid-cols-5 gap-1.5 shrink-0 animate-in fade-in slide-in-from-bottom-2">
           {QUICK_EMOJIS.map((emoji, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleAddEmoji(emoji)}
-              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-sm flex items-center justify-center transition-transform hover:scale-125"
+              className="p-1.5 rounded-lg bg-[#1B1E30] hover:bg-zinc-700 text-sm flex items-center justify-center transition-transform hover:scale-125"
             >
               {emoji}
             </button>
@@ -263,18 +277,18 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
         </div>
       )}
 
-      {/* Message Input & Send Form */}
+      {/* Message Input & Send Form - High contrast input and clear labels */}
       <form
         onSubmit={handleSubmit}
-        className="p-2 bg-zinc-950 border-t border-zinc-800 flex items-center gap-1.5 shrink-0"
+        className="p-2.5 bg-[#0A0B12] border-t border-zinc-700/80 flex items-center gap-2 shrink-0"
       >
         <button
           type="button"
           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className={`p-2 rounded-xl border transition-colors ${
+          className={`p-2.5 rounded-xl border transition-colors ${
             showEmojiPicker
-              ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+              ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+              : 'bg-[#181B2B] border-zinc-700 text-zinc-300 hover:text-white'
           }`}
           title="رموز تعبيرية سريعة"
         >
@@ -285,7 +299,7 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
           <button
             type="button"
             onClick={onOpenGiftModal}
-            className="p-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-xs shadow-md shadow-rose-900/40 flex items-center gap-1 shrink-0 transition-transform active:scale-95"
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-xs shadow-md shadow-rose-900/40 flex items-center gap-1.5 shrink-0 transition-transform active:scale-95"
             title="إرسال هدية للمضيف أو المتحدثين"
           >
             <GiftIcon className="w-4 h-4" />
@@ -297,9 +311,9 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder={`اكتب رسالة لرواد الغرفة فقط...`}
+          placeholder={`اكتب رسالة واضحة لرواد الغرفة...`}
           maxLength={250}
-          className="flex-1 bg-zinc-900 border border-zinc-800 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-colors min-w-0"
+          className="flex-1 bg-[#151726] border-2 border-zinc-700 focus:border-amber-400 rounded-xl px-3.5 py-2 text-xs font-medium text-white placeholder-zinc-400 focus:outline-none transition-colors min-w-0"
         />
 
         {isModerator && onClearChat && roomMessages.length > 1 && (
