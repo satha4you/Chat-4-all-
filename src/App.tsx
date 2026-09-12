@@ -66,7 +66,15 @@ export default function App() {
       try {
         const parsed: UserProfile[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const demoUserIds = new Set(['user_gold_1', 'user_silver_1', 'user_bronze_1', 'user_current_visitor', 'user_regular_1']);
+          const demoUserIds = new Set([
+            'user_gold_1',
+            'user_silver_1',
+            'user_bronze_1',
+            'user_current_visitor',
+            'user_regular_1',
+            'user_prince_royal',
+            'user_dana_gold',
+          ]);
           const filtered = parsed.filter((u) => !demoUserIds.has(u.id));
           const existingIds = new Set(filtered.map((u) => u.id));
           const merged = [...filtered, ...INITIAL_USERS.filter((u) => !existingIds.has(u.id))];
@@ -82,16 +90,6 @@ export default function App() {
               owner.verificationType = 'gold';
             }
             if ((owner.coins || 0) < 100000) owner.coins = 1000000;
-          }
-          const prince = merged.find((u) => u.id === 'user_prince_royal');
-          if (prince) {
-            if (!prince.email) prince.email = 'prince.saud@royal.vip';
-            if (!prince.passcode) prince.passcode = '123456';
-          }
-          const dana = merged.find((u) => u.id === 'user_dana_gold');
-          if (dana) {
-            if (!dana.email) dana.email = 'dana.qatar@royal.vip';
-            if (!dana.passcode) dana.passcode = '123456';
           }
 
           // Ensure every user has a passcode

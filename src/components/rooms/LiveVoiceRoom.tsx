@@ -87,6 +87,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     }
   }, [messages, room.id]);
   const [isMicOn, setIsMicOn] = useState(false);
+  const [isRoomAudioMuted, setIsRoomAudioMuted] = useState(false);
   const [hasRaisedHand, setHasRaisedHand] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [selectedSeatForGift, setSelectedSeatForGift] = useState<UserProfile | null>(room.host);
@@ -143,6 +144,8 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const micGainNodeRef = useRef<GainNode | null>(null);
+  const synthGainRef = useRef<GainNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   const isHost = room.host.id === currentUser.id;
@@ -173,6 +176,14 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     };
   }, [isSeated, isMicOn]);
 
+  // Handle master room mute changes on active microphone output
+  useEffect(() => {
+    if (micGainNodeRef.current && audioContextRef.current) {
+      const targetGain = isRoomAudioMuted ? 0 : 0.35;
+      micGainNodeRef.current.gain.setTargetAtTime(targetGain, audioContextRef.current.currentTime, 0.05);
+    }
+  }, [isRoomAudioMuted]);
+
   // Simulated ambient voice activity on other active seats
   useEffect(() => {
     const interval = setInterval(() => {
@@ -193,20 +204,117 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     return () => clearInterval(interval);
   }, [mySeatIndex]);
 
+  // Vocal formant speech synthesis for room listeners when participants on stage are speaking
+  useEffect(() => {
+    if (isRoomAudioMuted) {
+      if (synthGainRef.current && audioContextRef.current) {
+        synthGainRef.current.gain.setTargetAtTime(0, audioContextRef.current.currentTime, 0.05);
+      }
+      return;
+    }
+
+    const otherSpeakers = currentSeats.filter(
+      (s, idx) => idx !== mySeatIndex && s.isSpeaking && s.user && !s.isMuted
+    );
+
+    if (otherSpeakers.length > 0) {
+      try {
+        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+          const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          audioContextRef.current = new AudioCtx();
+        }
+        const ctx = audioContextRef.current;
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+
+        if (!synthGainRef.current) {
+          const masterGain = ctx.createGain();
+          masterGain.gain.setValueAtTime(0.06, ctx.currentTime);
+
+          // Vocal Formant Filters (speech vowel resonance 520Hz & 1450Hz)
+          const f1 = ctx.createBiquadFilter();
+          f1.type = 'bandpass';
+          f1.frequency.setValueAtTime(520, ctx.currentTime);
+          f1.Q.setValueAtTime(2.5, ctx.currentTime);
+
+          const f2 = ctx.createBiquadFilter();
+          f2.type = 'bandpass';
+          f2.frequency.setValueAtTime(1450, ctx.currentTime);
+          f2.Q.setValueAtTime(3.5, ctx.currentTime);
+
+          const osc = ctx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, ctx.currentTime);
+
+          const sub = ctx.createOscillator();
+          sub.type = 'triangle';
+          sub.frequency.setValueAtTime(70, ctx.currentTime);
+
+          const lfo = ctx.createOscillator();
+          lfo.type = 'sine';
+          lfo.frequency.setValueAtTime(3.8, ctx.currentTime);
+
+          const lfoGain = ctx.createGain();
+          lfoGain.gain.setValueAtTime(20, ctx.currentTime);
+          lfo.connect(lfoGain);
+          lfoGain.connect(osc.frequency);
+
+          osc.connect(f1);
+          sub.connect(f1);
+          f1.connect(f2);
+          f2.connect(masterGain);
+          masterGain.connect(ctx.destination);
+
+          osc.start();
+          sub.start();
+          lfo.start();
+
+          synthGainRef.current = masterGain;
+        } else {
+          synthGainRef.current.gain.setTargetAtTime(0.06, ctx.currentTime, 0.1);
+        }
+      } catch (e) {
+        // audio policy fallback
+      }
+    } else {
+      if (synthGainRef.current && audioContextRef.current) {
+        synthGainRef.current.gain.setTargetAtTime(0, audioContextRef.current.currentTime, 0.15);
+      }
+    }
+  }, [currentSeats, mySeatIndex, isRoomAudioMuted]);
+
   const startRealMicrophone = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       micStreamRef.current = stream;
 
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const audioCtx = new AudioCtx();
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
       audioContextRef.current = audioCtx;
 
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.5;
       source.connect(analyser);
       analyserRef.current = analyser;
+
+      // Broadcast audio to room speakers with master gain
+      const micGain = audioCtx.createGain();
+      micGain.gain.setValueAtTime(isRoomAudioMuted ? 0 : 0.35, audioCtx.currentTime);
+      source.connect(micGain);
+      micGain.connect(audioCtx.destination);
+      micGainNodeRef.current = micGain;
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
@@ -247,6 +355,14 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const stopRealMicrophone = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (micGainNodeRef.current) {
+      micGainNodeRef.current.disconnect();
+      micGainNodeRef.current = null;
+    }
+    if (synthGainRef.current) {
+      synthGainRef.current.disconnect();
+      synthGainRef.current = null;
     }
     if (micStreamRef.current) {
       micStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -307,6 +423,20 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     setIsMicOn(nextState);
     if (!nextState) {
       playSoundEffect('mic_off');
+      if (micStreamRef.current) {
+        micStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = false));
+      }
+      if (micGainNodeRef.current && audioContextRef.current) {
+        micGainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+      }
+    } else {
+      playSoundEffect('mic_on');
+      if (micStreamRef.current) {
+        micStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = true));
+      }
+      if (micGainNodeRef.current && audioContextRef.current) {
+        micGainNodeRef.current.gain.setValueAtTime(isRoomAudioMuted ? 0 : 0.35, audioContextRef.current.currentTime);
+      }
     }
     const updated = currentSeats.map((s, i) =>
       i === mySeatIndex ? { ...s, isMuted: !nextState } : s
@@ -515,22 +645,47 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
 
         {/* Row 2: Secondary Action & Rating Strip - Clean and never collides with Title */}
         <div className="px-3 py-1.5 bg-[#0c0d12]/90 border-t border-zinc-800/60 flex items-center justify-between gap-2">
-          {/* Room Star Rating Button */}
-          <button
-            onClick={() => setShowRatingModal(true)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shrink-0 ${
-              userExistingRating
-                ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm'
-                : 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-sm'
-            }`}
-            title={`تقييم الغرفة بالنجوم - متوسط التقييم: ${roomRatingAvg.toFixed(1)} من 5`}
-          >
-            <Star className={`w-3 h-3 ${userExistingRating ? 'fill-amber-400 text-amber-400' : 'fill-black text-black'}`} />
-            <span>{roomRatingAvg.toFixed(1)}</span>
-            <span className="text-[10px] font-medium">
-              {userExistingRating ? `(قيّمت ${userExistingRating}★)` : 'قيّم الغرفة'}
-            </span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Room Star Rating Button */}
+            <button
+              onClick={() => setShowRatingModal(true)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shrink-0 ${
+                userExistingRating
+                  ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm'
+                  : 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-sm'
+              }`}
+              title={`تقييم الغرفة بالنجوم - متوسط التقييم: ${roomRatingAvg.toFixed(1)} من 5`}
+            >
+              <Star className={`w-3 h-3 ${userExistingRating ? 'fill-amber-400 text-amber-400' : 'fill-black text-black'}`} />
+              <span>{roomRatingAvg.toFixed(1)}</span>
+              <span className="text-[10px] font-medium">
+                {userExistingRating ? `(قيّمت ${userExistingRating}★)` : 'قيّم الغرفة'}
+              </span>
+            </button>
+
+            {/* Room Audio Speaker Output Mute Toggle */}
+            <button
+              onClick={() => setIsRoomAudioMuted(!isRoomAudioMuted)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0 ${
+                isRoomAudioMuted
+                  ? 'bg-rose-950/70 border border-rose-500/50 text-rose-300'
+                  : 'bg-emerald-950/70 border border-emerald-500/50 text-emerald-300'
+              }`}
+              title={isRoomAudioMuted ? 'صوت الغرفة مكتوم - انقر لتشغيل الصوت' : 'صوت المتحدثين يعمل - انقر لكتم صوت الغرفة'}
+            >
+              {isRoomAudioMuted ? (
+                <>
+                  <VolumeX className="w-3 h-3 text-rose-400" />
+                  <span>الصوت مكتوم</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  <span>صوت المتحدثين مفعّل</span>
+                </>
+              )}
+            </button>
+          </div>
 
           {/* Featured Room Pill & Admin Upgrade Button */}
           <div className="flex items-center gap-1.5 shrink-0">
@@ -576,11 +731,11 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
         {/* Voice Stage (Host + Seats Grid) */}
-        <div className="flex-1 p-3 sm:p-4 overflow-y-auto flex flex-col justify-between border-b md:border-b-0 md:border-l border-zinc-800/80">
+        <div className="shrink-0 p-3 sm:p-3.5 border-b md:border-b-0 md:border-l border-zinc-800/80 bg-[#090A0F] md:flex-1 md:overflow-y-auto">
           
           {/* Seats Grid */}
           <div>
-            <div className="text-[11px] font-bold text-amber-400/80 mb-3 flex items-center justify-between px-1">
+            <div className="text-[11px] font-bold text-amber-400/80 mb-2.5 flex items-center justify-between px-1">
               <span className="flex items-center gap-1">
                 <Crown className="w-3.5 h-3.5" />
                 المسرح الصوتي ({currentSeats.filter((s) => s.user).length}/{currentSeats.length})
@@ -636,10 +791,30 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                             audioLevel={seat.audioLevel}
                             showCrown={true}
                           />
-                          {/* Mute indicator on avatar */}
-                          {seat.isMuted && (
+                          {/* Interactive Mute/Unmute indicator or toggle button on avatar */}
+                          {isMySeat ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleMic();
+                              }}
+                              className={`absolute -bottom-1 -right-1 p-1 rounded-full border border-black shadow-md transition-transform active:scale-90 z-20 ${
+                                isMicOn
+                                  ? 'bg-emerald-500 text-black hover:bg-emerald-400'
+                                  : 'bg-rose-600 text-white hover:bg-rose-500'
+                              }`}
+                              title={isMicOn ? 'انقر لكتم المايك' : 'انقر لتشغيل المايك'}
+                            >
+                              {isMicOn ? <Mic className="w-2.5 h-2.5" /> : <MicOff className="w-2.5 h-2.5" />}
+                            </button>
+                          ) : seat.isMuted ? (
                             <div className="absolute bottom-0 right-0 p-1 bg-red-600 rounded-full border border-black shadow">
                               <MicOff className="w-2 h-2 text-white" />
+                            </div>
+                          ) : (
+                            <div className="absolute bottom-0 right-0 p-1 bg-emerald-500 rounded-full border border-black shadow">
+                              <Mic className="w-2 h-2 text-black" />
                             </div>
                           )}
                         </div>
@@ -706,54 +881,9 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
             </div>
           </div>
 
-          {/* Quick Soundboard / Reactions Bar */}
-          <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto py-1">
-              <button
-                onClick={() => handleSoundboardPlay('applause')}
-                className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 flex items-center gap-1 shrink-0 transition-transform active:scale-95"
-                title="تصفيق حار"
-              >
-                👏 <span className="hidden sm:inline">تصفيق</span>
-              </button>
-              <button
-                onClick={() => handleSoundboardPlay('oud_chord')}
-                className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-amber-300 flex items-center gap-1 shrink-0 transition-transform active:scale-95"
-                title="عزف عود طربي"
-              >
-                🎵 <span className="hidden sm:inline">طرب</span>
-              </button>
-              <button
-                onClick={() => handleSoundboardPlay('vip_fanfare')}
-                className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-yellow-300 flex items-center gap-1 shrink-0 transition-transform active:scale-95"
-                title="أبواق ملكية"
-              >
-                🎺 <span className="hidden sm:inline">ملكيات</span>
-              </button>
-              <button
-                onClick={() => handleSoundboardPlay('bell')}
-                className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 flex items-center gap-1 shrink-0 transition-transform active:scale-95"
-                title="جرس تنبيه"
-              >
-                🔔
-              </button>
-            </div>
-
-            {/* Send Gift Trigger */}
-            <button
-              onClick={() => {
-                setSelectedSeatForGift(room.host);
-                setShowGiftModal(true);
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold text-xs shadow-lg shadow-rose-900/30 flex items-center gap-1.5 shrink-0 transition-transform active:scale-95"
-            >
-              <GiftIcon className="w-4 h-4" />
-              <span>إرسال هدية</span>
-            </button>
-          </div>
         </div>
 
-        {/* Simple Text-Based Room Chat Interface Scoped to Participants in This Specific Room */}
+        {/* Room Chat Interface Scoped to Participants in This Specific Room */}
         <RoomChatInterface
           room={room}
           currentUser={currentUser}
@@ -762,6 +892,10 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
           onUserClick={onUserClick}
           onPreviewGiftEffect={handlePreviewGiftEffect}
           onClearChat={handleClearChat}
+          onOpenGiftModal={() => {
+            setSelectedSeatForGift(room.host);
+            setShowGiftModal(true);
+          }}
           isModerator={isModerator}
         />
       </div>
@@ -772,26 +906,38 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         {/* Left Side: Mic status & controls */}
         <div className="flex items-center gap-2">
           {isSeated ? (
-            <button
-              onClick={handleToggleMic}
-              className={`px-4 py-2 rounded-2xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 ${
-                isMicOn
-                  ? 'bg-emerald-500 hover:bg-emerald-400 text-black ring-2 ring-emerald-300'
-                  : 'bg-rose-600 hover:bg-rose-500 text-white'
-              }`}
-            >
-              {isMicOn ? (
-                <>
-                  <Mic className="w-4 h-4" />
-                  <span>المايك يعمل</span>
-                </>
-              ) : (
-                <>
-                  <MicOff className="w-4 h-4" />
-                  <span>المايك مكتوم</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleToggleMic}
+                className={`px-4 py-2 rounded-2xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer ${
+                  isMicOn
+                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black ring-2 ring-emerald-300'
+                    : 'bg-rose-600 hover:bg-rose-500 text-white'
+                }`}
+                title={isMicOn ? 'انقر لكتم صوت المايك' : 'انقر لتشغيل المايك والسماح للجميع بسماعك'}
+              >
+                {isMicOn ? (
+                  <>
+                    <Mic className="w-4 h-4 animate-pulse" />
+                    <span>المايك مفعّل ومسموع للجميع</span>
+                    <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-full font-bold">كتم</span>
+                  </>
+                ) : (
+                  <>
+                    <MicOff className="w-4 h-4" />
+                    <span>المايك مكتوم (انقر للتحدث)</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleLeaveSeat}
+                className="px-3 py-2 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-rose-400 text-xs font-bold transition-colors"
+                title="النزول من مقعد التحدث"
+              >
+                النزول
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => {

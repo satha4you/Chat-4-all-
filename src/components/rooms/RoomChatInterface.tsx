@@ -26,6 +26,7 @@ interface RoomChatInterfaceProps {
   onUserClick: (user: UserProfile) => void;
   onPreviewGiftEffect?: (gift: Gift, count: number) => void;
   onClearChat?: () => void;
+  onOpenGiftModal?: () => void;
   isModerator?: boolean;
 }
 
@@ -48,6 +49,7 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
   onUserClick,
   onPreviewGiftEffect,
   onClearChat,
+  onOpenGiftModal,
   isModerator = false,
 }) => {
   const [inputText, setInputText] = useState('');
@@ -106,61 +108,13 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
   return (
     <div
       id={`room_chat_interface_${room.id}`}
-      className="w-full md:w-80 h-72 md:h-full bg-[#0B0C12] flex flex-col border-t md:border-t-0 md:border-r border-zinc-800 relative select-text"
+      className="w-full flex-1 min-h-0 bg-[#08090D] flex flex-col md:border-r border-zinc-800/80 relative select-text"
     >
-      {/* Top Header of Room-Specific Chat */}
-      <div className="px-3.5 py-2.5 bg-zinc-950/90 border-b border-zinc-800 flex items-center justify-between shrink-0 backdrop-blur-sm">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-            <MessageCircle className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="font-black text-xs text-white">الدردشة الحية</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-[9px] text-emerald-300 font-bold flex items-center gap-0.5">
-                <Lock className="w-2.5 h-2.5 text-emerald-400" />
-                <span>خاصة بالغرفة</span>
-              </span>
-            </div>
-            <p className="text-[10px] text-zinc-400 truncate max-w-[170px]">
-              مرئية فقط لرواد: {room.title}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono">
-            {roomMessages.length}
-          </span>
-          {isModerator && onClearChat && roomMessages.length > 1 && (
-            <button
-              onClick={() => {
-                if (window.confirm('هل أنت متأكد من رغبتك في مسح سجل رسائل هذه الغرفة؟')) {
-                  onClearChat();
-                }
-              }}
-              className="p-1 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-900 transition-colors"
-              title="مسح محادثة الغرفة للمشرفين"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Room Scope Privacy Banner */}
-      <div className="px-3 py-1.5 bg-gradient-to-r from-amber-950/30 via-zinc-900/50 to-amber-950/20 border-b border-amber-500/20 text-[10px] text-amber-300/80 flex items-center gap-1.5 shrink-0">
-        <Info className="w-3 h-3 text-amber-400 shrink-0" />
-        <span className="truncate">
-          🔒 الرسائل مرئية فقط للمشاركين الحاضرين في هذه الغرفة.
-        </span>
-      </div>
-
-      {/* Messages Scroll Area */}
+      {/* Messages Scroll Area - Full height for high visibility and clear text reading */}
       <div
         ref={chatScrollRef}
         onScroll={handleScroll}
-        className="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs select-text scroll-smooth"
+        className="flex-1 p-3 overflow-y-auto space-y-2 text-xs select-text scroll-smooth"
       >
         {roomMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 text-zinc-500 space-y-2">
@@ -327,19 +281,46 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
           <Smile className="w-4 h-4" />
         </button>
 
+        {onOpenGiftModal && (
+          <button
+            type="button"
+            onClick={onOpenGiftModal}
+            className="p-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-xs shadow-md shadow-rose-900/40 flex items-center gap-1 shrink-0 transition-transform active:scale-95"
+            title="إرسال هدية للمضيف أو المتحدثين"
+          >
+            <GiftIcon className="w-4 h-4" />
+            <span className="hidden xs:inline sm:inline">هدية</span>
+          </button>
+        )}
+
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder={`اكتب رسالة لرواد الغرفة فقط...`}
           maxLength={250}
-          className="flex-1 bg-zinc-900 border border-zinc-800 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-colors"
+          className="flex-1 bg-zinc-900 border border-zinc-800 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none transition-colors min-w-0"
         />
+
+        {isModerator && onClearChat && roomMessages.length > 1 && (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('هل ترغب في مسح سجل رسائل الغرفة؟')) {
+                onClearChat();
+              }
+            }}
+            className="p-2 text-zinc-500 hover:text-rose-400 rounded-xl hover:bg-zinc-900 transition-colors shrink-0"
+            title="مسح محادثة الغرفة"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         <button
           type="submit"
           disabled={!inputText.trim()}
-          className="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:hover:bg-amber-500 text-black font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+          className="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:hover:bg-amber-500 text-black font-bold transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
           title="إرسال الرسالة إلى الغرفة"
         >
           <Send className="w-4 h-4 rotate-180" />

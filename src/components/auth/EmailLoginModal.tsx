@@ -232,16 +232,6 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
     }, 700);
   };
 
-  // Quick Account Autofill for Demo & Testing
-  const handleAutofillAccount = (targetEmail: string, targetPass: string) => {
-    setActiveTab('login');
-    setLoginEmail(targetEmail);
-    setLoginPasscode(targetPass);
-    setError('');
-    setSuccessMsg(`تم تعبئة البريد (${targetEmail}) والرمز السري بنجاح! اضغط «تسجيل الدخول» للمتابعة.`);
-    playSoundEffect('bell');
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md animate-fadeIn select-none overflow-y-auto">
       <div className="relative w-full max-w-lg bg-[#0A0713] border-2 border-amber-500/50 rounded-3xl p-5 sm:p-7 shadow-[0_0_60px_rgba(212,175,55,0.25)] text-zinc-100 my-auto">
@@ -559,81 +549,6 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
             </button>
           </form>
         )}
-
-        {/* Quick Demo Credentials for Fast Testing */}
-        <div className="pt-4 mt-4 border-t border-zinc-800/80">
-          <div className="text-[11px] font-bold text-zinc-300 mb-2 flex items-center justify-between">
-            <span className="flex items-center gap-1 text-amber-300">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-              حسابات جاهزة للتجربة السريعة (بالإيميل والرمز):
-            </span>
-            <span className="text-[10px] text-zinc-500 font-normal">تعبئة بنقرة واحدة</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            
-            {/* Owner Button */}
-            <button
-              type="button"
-              onClick={() => handleAutofillAccount(ADMIN_SECURITY_CONFIG.adminEmail, ADMIN_SECURITY_CONFIG.adminPasscode)}
-              className="p-2 rounded-xl bg-[#160A28] hover:bg-[#251042] border border-amber-500/40 text-right transition-all flex flex-col gap-0.5 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-amber-300 group-hover:text-amber-200 flex items-center gap-1">
-                  المالك العام 👑
-                </span>
-                <VerifiedBadge type="gold" size="xs" />
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono truncate">
-                {ADMIN_SECURITY_CONFIG.adminEmail}
-              </div>
-              <div className="text-[9px] text-amber-400/90 font-mono mt-0.5">
-                الرمز: {ADMIN_SECURITY_CONFIG.adminPasscode}
-              </div>
-            </button>
-
-            {/* Prince Saud Button */}
-            <button
-              type="button"
-              onClick={() => handleAutofillAccount('prince.saud@royal.vip', '123456')}
-              className="p-2 rounded-xl bg-[#120B20] hover:bg-[#1D1133] border border-zinc-800 hover:border-purple-500/50 text-right transition-all flex flex-col gap-0.5 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-200 group-hover:text-white flex items-center gap-1">
-                  الأمير سعود 👑
-                </span>
-                <VerifiedBadge type="blue" size="xs" />
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono truncate">
-                prince.saud@royal.vip
-              </div>
-              <div className="text-[9px] text-purple-300 font-mono mt-0.5">
-                الرمز: 123456
-              </div>
-            </button>
-
-            {/* Dana Qatar Button */}
-            <button
-              type="button"
-              onClick={() => handleAutofillAccount('dana.qatar@royal.vip', '123456')}
-              className="p-2 rounded-xl bg-[#120B20] hover:bg-[#1D1133] border border-zinc-800 hover:border-yellow-500/50 text-right transition-all flex flex-col gap-0.5 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-200 group-hover:text-white flex items-center gap-1">
-                  دانة الخليج 💎
-                </span>
-                <span className="text-[9px]">🇶🇦</span>
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono truncate">
-                dana.qatar@royal.vip
-              </div>
-              <div className="text-[9px] text-yellow-300 font-mono mt-0.5">
-                الرمز: 123456
-              </div>
-            </button>
-
-          </div>
-        </div>
 
       </div>
     </div>
