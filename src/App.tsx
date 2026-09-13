@@ -84,10 +84,14 @@ export default function App() {
           const merged = [...filtered, ...INITIAL_USERS.filter((u) => !existingIds.has(u.id))];
           const owner = merged.find((u) => u.id === 'user_owner');
           if (owner) {
-            owner.email = 'Satha4you@gmail.com';
-            owner.passcode = ADMIN_SECURITY_CONFIG.adminPasscode;
+            // Keep user's custom edits (avatar, nickname, bio, status, country, etc.) intact!
+            // Only ensure vital admin privileges are maintained without wiping profile customizations
+            if (!owner.email) owner.email = 'Satha4you@gmail.com';
+            if (!owner.passcode) owner.passcode = ADMIN_SECURITY_CONFIG.adminPasscode;
             owner.role = 'owner';
-            owner.vipTier = 'mythic';
+            if (!owner.vipTier || owner.vipTier === 'none') {
+              owner.vipTier = 'mythic';
+            }
             owner.isVipActive = true;
             owner.verified = true;
             if (!owner.verificationType) {
@@ -284,9 +288,15 @@ export default function App() {
 
   // Handlers
   const handleUpdateUser = (userId: string, updates: Partial<UserProfile>) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, ...updates } : u))
-    );
+    setUsers((prev) => {
+      const nextUsers = prev.map((u) => (u.id === userId ? { ...u, ...updates } : u));
+      try {
+        localStorage.setItem('royal_voice_users', JSON.stringify(nextUsers));
+      } catch (e) {
+        console.warn('Failed to save updated users to localStorage:', e);
+      }
+      return nextUsers;
+    });
 
     // If inspected user is updated
     setInspectedUser((prev) => (prev && prev.id === userId ? { ...prev, ...updates } : prev));

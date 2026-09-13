@@ -3,6 +3,7 @@ import { UserProfile, ChatMessage, Gift } from '../../types';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
 import { VIPName } from '../common/VIPName';
+import { VIPMessageBubble } from '../common/VIPMessageBubble';
 import { INITIAL_GIFTS } from '../../data/initialData';
 import { MessageSquare, Send, Gift as GiftIcon, Sparkles, Check, CheckCheck, Crown } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -246,31 +247,15 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
               }
 
               return (
-                <div
+                <VIPMessageBubble
                   key={msg.id}
-                  className={`flex items-end gap-2 ${isMine ? 'justify-start' : 'justify-end'}`}
-                >
-                  {!isMine && (
-                    <AvatarWithFrame user={msg.sender} size="xs" showCrown={false} />
-                  )}
-                  <div
-                    className={`max-w-[75%] rounded-2xl p-3 text-xs leading-relaxed shadow ${
-                      isMine
-                        ? 'bg-gradient-to-r from-amber-600 to-yellow-500 text-black font-semibold rounded-br-xs'
-                        : 'bg-zinc-900 text-zinc-100 border border-zinc-800 rounded-bl-xs'
-                    }`}
-                  >
-                    <p className="break-words">{msg.content}</p>
-                    <div
-                      className={`text-[9px] mt-1 flex items-center justify-end gap-1 ${
-                        isMine ? 'text-black/70' : 'text-zinc-500'
-                      }`}
-                    >
-                      <span>{msg.timestamp}</span>
-                      {isMine && <CheckCheck className="w-3 h-3" />}
-                    </div>
-                  </div>
-                </div>
+                  sender={msg.sender}
+                  content={msg.content}
+                  timestamp={msg.timestamp}
+                  isMe={isMine}
+                  onUserClick={onUserClick}
+                  variant="direct"
+                />
               );
             })
           )}

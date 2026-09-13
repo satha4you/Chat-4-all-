@@ -10,6 +10,16 @@ interface RealisticCrownProps {
   className?: string;
 }
 
+/**
+ * 3D ROYAL MASTER CROWN (8K ULTRA-LUXURY GAMING CROWN)
+ * Redesigned from scratch with:
+ * - Massive 3D volume, levitation dynamics, perspective tilting
+ * - Distinct structural architectures for VIP 1 (Bronze), VIP 2 (Silver), VIP 3 (Gold), VIP 4 (Royal), and VIP 5 (Mythic)
+ * - Layered gold plumage wings flanking VIP 4 & VIP 5
+ * - Multi-faceted diamond & gemstone mounts with realistic specular refractions
+ * - Heavy ribbed 3D imperial arches, Latin orb-cross finials, and sculpted royal lion crest
+ * - Concentric celestial aura, ray pulses, and shimmering star sparkles
+ */
 export const RealisticCrown: React.FC<RealisticCrownProps> = ({
   tier = 'mythic',
   size = 'md',
@@ -22,85 +32,91 @@ export const RealisticCrown: React.FC<RealisticCrownProps> = ({
 
   // Dimensions based on size preset
   const sizeMap = {
-    xs: { width: 22, height: 18 },
-    sm: { width: 30, height: 24 },
-    md: { width: 46, height: 36 },
-    lg: { width: 68, height: 54 },
-    xl: { width: 92, height: 72 },
-    '2xl': { width: 118, height: 92 },
+    xs: { width: 26, height: 21 },
+    sm: { width: 34, height: 28 },
+    md: { width: 52, height: 42 },
+    lg: { width: 78, height: 62 },
+    xl: { width: 104, height: 82 },
+    '2xl': { width: 132, height: 104 },
   }[size];
 
   // Distinct color palettes for every single VIP tier
   const palette = {
     bronze: {
-      metalLight: '#FED7AA',
-      metalMid: '#D97706',
-      metalDark: '#9A3412',
-      metalShadow: '#431407',
+      goldLight: '#FFF7ED',
+      goldMid: '#F59E0B',
+      goldDeep: '#D97706',
+      goldShadow: '#431407',
       capBg: '#2A1205',
       gemPrimary: '#EA580C',
       gemSecondary: '#F97316',
-      glow: 'rgba(234, 88, 12, 0.75)',
+      glow: 'rgba(234, 88, 12, 0.85)',
       sparkle: '#FFEDD5',
+      label: 'VIP 1',
     },
     silver: {
-      metalLight: '#FFFFFF',
-      metalMid: '#94A3B8',
-      metalDark: '#475569',
-      metalShadow: '#0F172A',
-      capBg: '#081426',
+      goldLight: '#FFFFFF',
+      goldMid: '#CBD5E1',
+      goldDeep: '#64748B',
+      goldShadow: '#0F172A',
+      capBg: '#091528',
       gemPrimary: '#06B6D4',
       gemSecondary: '#38BDF8',
-      glow: 'rgba(56, 189, 248, 0.8)',
+      glow: 'rgba(56, 189, 248, 0.9)',
       sparkle: '#E0F2FE',
+      label: 'VIP 2',
     },
     gold: {
-      metalLight: '#FEF08A',
-      metalMid: '#EAB308',
-      metalDark: '#B45309',
-      metalShadow: '#451A03',
-      capBg: '#4A0505',
+      goldLight: '#FFFFFF',
+      goldMid: '#FACC15',
+      goldDeep: '#D97706',
+      goldShadow: '#451A03',
+      capBg: '#3B0909',
       gemPrimary: '#DC2626',
       gemSecondary: '#EF4444',
-      glow: 'rgba(234, 179, 8, 0.85)',
+      glow: 'rgba(250, 204, 21, 0.9)',
       sparkle: '#FEF9C3',
+      label: 'VIP 3',
     },
     royal: {
-      metalLight: '#FEF9C3',
-      metalMid: '#F59E0B',
-      metalDark: '#1D4ED8',
-      metalShadow: '#1E3A8A',
-      capBg: '#1E1B4B',
+      goldLight: '#FFFFFF',
+      goldMid: '#F59E0B',
+      goldDeep: '#2563EB',
+      goldShadow: '#1E3A8A',
+      capBg: '#170938',
       gemPrimary: '#2563EB',
       gemSecondary: '#9333EA',
-      glow: 'rgba(37, 99, 235, 0.9)',
+      glow: 'rgba(37, 99, 235, 0.95)',
       sparkle: '#DBEAFE',
+      label: 'VIP 4',
     },
     mythic: {
-      metalLight: '#FFFFFF',
-      metalMid: '#C084FC',
-      metalDark: '#7E22CE',
-      metalShadow: '#18042B',
-      capBg: '#24043D',
-      gemPrimary: '#A855F7',
+      goldLight: '#FFFFFF',
+      goldMid: '#F59E0B',
+      goldDeep: '#B45309',
+      goldShadow: '#1E0436',
+      capBg: '#2A0647',
+      gemPrimary: '#C084FC',
       gemSecondary: '#F43F5E',
-      glow: 'rgba(168, 85, 247, 0.95)',
+      glow: 'rgba(216, 180, 254, 0.98)',
       sparkle: '#FDE047',
+      label: 'VIP 5',
     },
     none: {
-      metalLight: '#FEF08A',
-      metalMid: '#EAB308',
-      metalDark: '#B45309',
-      metalShadow: '#451A03',
-      capBg: '#24043D',
-      gemPrimary: '#A855F7',
-      gemSecondary: '#DC2626',
-      glow: 'rgba(234, 179, 8, 0.5)',
+      goldLight: '#FFFFFF',
+      goldMid: '#F59E0B',
+      goldDeep: '#B45309',
+      goldShadow: '#1E0436',
+      capBg: '#2A0647',
+      gemPrimary: '#C084FC',
+      gemSecondary: '#F43F5E',
+      glow: 'rgba(250, 204, 21, 0.6)',
       sparkle: '#FFFFFF',
+      label: 'VIP 5',
     },
   }[tier || 'mythic'];
 
-  const uniqueId = React.useId().replace(/:/g, '_');
+  const uniqueId = `crown_${tier || 'mythic'}_${size}`;
 
   return (
     <motion.div
@@ -108,114 +124,120 @@ export const RealisticCrown: React.FC<RealisticCrownProps> = ({
       onMouseLeave={() => setInternalHover(false)}
       className={`relative inline-flex items-center justify-center select-none shrink-0 ${className}`}
       style={{
-        perspective: 900,
+        perspective: 1000,
         transformStyle: 'preserve-3d',
       }}
       animate={
         animated
           ? {
-              rotateY: isHovered ? [-18, 18, -18] : [-12, 12, -12],
-              rotateX: isHovered ? [7, -7, 7] : [4, -4, 4],
-              rotateZ: [-2, 2, -2],
-              y: isHovered ? [-5, 5, -5] : [-3, 3, -3],
-              scale: isHovered ? 1.15 : 1,
+              rotateY: isHovered ? [-16, 16, -16] : [-10, 10, -10],
+              rotateX: isHovered ? [6, -6, 6] : [3, -3, 3],
+              rotateZ: [-1.5, 1.5, -1.5],
+              y: isHovered ? [-6, 6, -6] : [-3, 3, -3],
+              scale: isHovered ? 1.16 : 1,
             }
           : undefined
       }
       transition={
         animated
           ? {
-              rotateY: { repeat: Infinity, duration: 4.8, ease: 'easeInOut' },
-              rotateX: { repeat: Infinity, duration: 4.8, ease: 'easeInOut' },
-              rotateZ: { repeat: Infinity, duration: 4.8, ease: 'easeInOut' },
-              y: { repeat: Infinity, duration: 2.8, ease: 'easeInOut' },
+              rotateY: { repeat: Infinity, duration: 4.6, ease: 'easeInOut' },
+              rotateX: { repeat: Infinity, duration: 4.6, ease: 'easeInOut' },
+              rotateZ: { repeat: Infinity, duration: 4.6, ease: 'easeInOut' },
+              y: { repeat: Infinity, duration: 2.6, ease: 'easeInOut' },
               scale: { duration: 0.35, ease: 'easeOut' },
             }
           : undefined
       }
     >
-      {/* 1. Intensive Glow Pulse Halo on Hover or Continuous Ambient Glow */}
+      {/* 1. Intensive Multi-Ring Royal Ambient Glow & Halo */}
       <motion.div
         animate={
           isHovered
             ? {
-                scale: [1, 1.4, 1.25],
+                scale: [1, 1.35, 1.2],
                 opacity: [0.75, 1, 0.8],
-                filter: ['blur(6px)', 'blur(12px)', 'blur(8px)'],
+                filter: ['blur(6px)', 'blur(14px)', 'blur(8px)'],
               }
             : animated
             ? {
-                scale: [1, 1.12, 1],
-                opacity: [0.35, 0.6, 0.35],
-                filter: ['blur(4px)', 'blur(6px)', 'blur(4px)'],
+                scale: [1, 1.15, 1],
+                opacity: [0.4, 0.7, 0.4],
+                filter: ['blur(4px)', 'blur(8px)', 'blur(4px)'],
               }
             : undefined
         }
         transition={{
           repeat: Infinity,
-          duration: isHovered ? 1.2 : 2.6,
+          duration: isHovered ? 1.4 : 2.8,
           ease: 'easeInOut',
         }}
-        className="absolute -inset-2 rounded-full pointer-events-none"
+        className="absolute -inset-3 rounded-full pointer-events-none"
         style={{
-          background: `radial-gradient(circle, ${palette.glow} 0%, ${palette.metalMid}33 50%, transparent 80%)`,
+          background: `radial-gradient(circle, ${palette.glow} 0%, rgba(245, 158, 11, 0.35) 45%, transparent 75%)`,
         }}
       />
 
-      {/* 2. Sparkle particle when hovered */}
+      {/* 2. Shimmering Star Sparkles */}
       {isHovered && (
         <>
-          <span className="absolute -top-2 -right-2 text-[10px] pointer-events-none animate-ping text-amber-300">
+          <span className="absolute -top-3 -right-3 text-[11px] pointer-events-none animate-ping text-amber-300 select-none">
             ✨
           </span>
-          <span className="absolute -bottom-1 -left-2 text-[9px] pointer-events-none animate-pulse text-yellow-200">
+          <span className="absolute -bottom-2 -left-3 text-[10px] pointer-events-none animate-pulse text-yellow-200 select-none">
             🌟
+          </span>
+          <span className="absolute -top-2 -left-2 text-[9px] pointer-events-none animate-bounce text-amber-200 select-none">
+            ⭐
           </span>
         </>
       )}
 
-      {/* 3. 3D SVG Crown Architecture */}
+      {/* 3. 3D SVG Massive Imperial Crown */}
       <svg
         width={sizeMap.width}
         height={sizeMap.height}
-        viewBox="0 0 120 90"
+        viewBox="0 0 130 96"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        className="overflow-visible"
         style={{
           filter: isHovered
-            ? `drop-shadow(0 0 12px ${palette.glow}) drop-shadow(0 0 20px ${palette.metalLight}99)`
+            ? `drop-shadow(0 0 14px ${palette.glow}) drop-shadow(0 0 24px rgba(250, 204, 21, 0.8))`
             : animated
-            ? `drop-shadow(0 3px 8px ${palette.glow}) drop-shadow(0 0 8px ${palette.metalMid}55)`
+            ? `drop-shadow(0 4px 10px ${palette.glow}) drop-shadow(0 0 10px rgba(245, 158, 11, 0.45))`
             : undefined,
         }}
       >
         <defs>
-          {/* Tier Metallic Primary Gradient */}
-          <linearGradient id={`tierMetal_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Master 24K Gold Gradient */}
+          <linearGradient id={`tierGold_${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="25%" stopColor={palette.metalLight} />
-            <stop offset="60%" stopColor={palette.metalMid} />
-            <stop offset="90%" stopColor={palette.metalDark} />
-            <stop offset="100%" stopColor={palette.metalShadow} />
+            <stop offset="20%" stopColor={palette.goldLight} />
+            <stop offset="48%" stopColor={palette.goldMid} />
+            <stop offset="78%" stopColor={palette.goldDeep} />
+            <stop offset="100%" stopColor={palette.goldShadow} />
           </linearGradient>
 
-          {/* Tier Highlight Gradient */}
-          <linearGradient id={`tierSpecular_${uniqueId}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
-            <stop offset="100%" stopColor={palette.metalLight} stopOpacity="0.4" />
+          {/* Reverse Bevel Gradient */}
+          <linearGradient id={`tierGoldBevel_${uniqueId}`} x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
+            <stop offset="40%" stopColor={palette.goldLight} stopOpacity="0.85" />
+            <stop offset="80%" stopColor={palette.goldDeep} stopOpacity="0.9" />
+            <stop offset="100%" stopColor={palette.goldShadow} stopOpacity="1" />
           </linearGradient>
 
-          {/* Gem Primary Radial */}
-          <radialGradient id={`gemRad1_${uniqueId}`} cx="35%" cy="30%" r="70%">
+          {/* Faceted Gem Radial */}
+          <radialGradient id={`crownGem_${uniqueId}`} cx="35%" cy="30%" r="70%">
             <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="30%" stopColor={palette.gemSecondary} />
-            <stop offset="85%" stopColor={palette.gemPrimary} />
+            <stop offset="28%" stopColor={palette.gemSecondary} />
+            <stop offset="75%" stopColor={palette.gemPrimary} />
             <stop offset="100%" stopColor="#000000" />
           </radialGradient>
 
-          {/* Filter for sparkling gleam */}
-          <filter id={`sparkleGlow_${uniqueId}`} x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
+          {/* Sparkle filter */}
+          <filter id={`crownSparkle_${uniqueId}`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.6" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -223,223 +245,227 @@ export const RealisticCrown: React.FC<RealisticCrownProps> = ({
           </filter>
         </defs>
 
-        {/* ═════════════════════════════════════════════════════════════════
-            EACH VIP LEVEL HAS ITS OWN TOTALLY DISTINCT CROWN ARCHITECTURE!
-            ═════════════════════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            CROWN ARCHITECTURES PER VIP TIER
+            ═══════════════════════════════════════════════════════════════════ */}
 
-        {/* ── 1. BRONZE (VIP 1 Falcon Warrior Wing Coronet) ── */}
+        {/* ── 1. BRONZE (VIP 1 Falcon Warrior Wings Diadem) ── */}
         {tier === 'bronze' && (
-          <g id="realistic_bronze">
-            {/* Warrior Back Leather Cap */}
-            <path d="M 28 66 C 30 42, 44 32, 60 30 C 76 32, 90 42, 92 66 Z" fill={palette.capBg} />
+          <g id="crown_bronze">
+            {/* Dark Leather Cap Dome */}
+            <path d="M 32 70 C 34 44, 48 34, 65 32 C 82 34, 96 44, 98 70 Z" fill={palette.capBg} />
 
-            {/* Wing Spires (Left and Right Sweeping Chevron Feathers) */}
-            <polygon points="14,68 6,34 26,48 28,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
-            <polygon points="26,68 22,26 38,44 40,68" fill={`url(#tierMetal_${uniqueId})`} stroke={palette.metalLight} strokeWidth="0.8" />
-            
-            {/* Center Falcon Spear Peak */}
-            <polygon points="46,68 60,10 74,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1.2" />
-            <polygon points="55,68 60,18 65,68" fill={`url(#tierSpecular_${uniqueId})`} />
-            <circle cx="60" cy="14" r="3.2" fill={`url(#gemRad1_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            {/* Left Wing Spires */}
+            <polygon points="18,72 10,36 30,50 32,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            <polygon points="30,72 26,28 42,46 44,72" fill={`url(#tierGold_${uniqueId})`} stroke={palette.goldLight} strokeWidth="0.8" />
 
-            <polygon points="94,68 98,26 82,44 80,68" fill={`url(#tierMetal_${uniqueId})`} stroke={palette.metalLight} strokeWidth="0.8" />
-            <polygon points="106,68 114,34 94,48 92,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            {/* Center Falcon Peak Spear */}
+            <polygon points="50,72 65,12 80,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1.2" />
+            <circle cx="65" cy="16" r="3.6" fill={`url(#crownGem_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
 
-            {/* Heavy Riveted Bronze Diadem Rim */}
-            <path d="M 10 68 C 35 73, 85 73, 110 68 L 110 80 C 85 86, 35 86, 10 80 Z" fill={`url(#tierMetal_${uniqueId})`} stroke={palette.metalShadow} strokeWidth="1" />
-            {[18, 34, 50, 60, 70, 86, 102].map((cx, i) => (
-              <circle key={i} cx={cx} cy="74" r="2.2" fill="#FFFFFF" stroke={palette.metalShadow} strokeWidth="0.6" />
-            ))}
+            {/* Right Wing Spires */}
+            <polygon points="100,72 104,28 88,46 86,72" fill={`url(#tierGold_${uniqueId})`} stroke={palette.goldLight} strokeWidth="0.8" />
+            <polygon points="112,72 120,36 100,50 98,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
 
-            {/* Center Amber Shield Gem */}
-            <polygon points="60,46 68,56 60,66 52,56" fill={`url(#gemRad1_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
+            {/* Diadem Band with VIP 1 Cartouche */}
+            <path d="M 14 72 C 40 78, 90 78, 116 72 L 116 86 C 90 92, 40 92, 14 86 Z" fill={`url(#tierGold_${uniqueId})`} stroke={palette.goldShadow} strokeWidth="1.2" />
+            <rect x="42" y="74" width="46" height="14" rx="7" fill={palette.capBg} stroke="#FFFFFF" strokeWidth="0.9" />
+            <text x="65" y="84.5" textAnchor="middle" fill="#FFFFFF" stroke={palette.goldLight} strokeWidth="0.4" fontSize="9" fontWeight="900" letterSpacing="0.8">VIP 1</text>
+            <polygon points="65,48 74,58 65,68 56,58" fill={`url(#crownGem_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
           </g>
         )}
 
-        {/* ── 2. SILVER (VIP 2 Lunar Crescent Gothic Tiara) ── */}
+        {/* ── 2. SILVER (VIP 2 Lunar Gothic Tiara with Ice Crystals) ── */}
         {tier === 'silver' && (
-          <g id="realistic_silver">
-            {/* Night Icy Cap */}
-            <path d="M 30 66 C 32 38, 44 26, 60 24 C 76 26, 88 38, 90 66 Z" fill={palette.capBg} />
+          <g id="crown_silver">
+            {/* Velvet Icy Cap */}
+            <path d="M 34 70 C 36 40, 48 28, 65 26 C 82 28, 94 40, 96 70 Z" fill={palette.capBg} />
 
             {/* Gothic Needle Arches */}
             <path
-              d="M 16 68 C 14 50, 16 34, 22 22 C 26 34, 32 44, 36 56 C 42 40, 48 24, 52 14 C 55 26, 58 40, 60 50 C 62 40, 65 26, 68 14 C 72 24, 78 40, 84 56 C 88 44, 94 34, 98 22 C 104 34, 106 50, 104 68 Z"
-              fill={`url(#tierMetal_${uniqueId})`}
+              d="M 20 72 C 18 52, 20 36, 26 24 C 30 36, 36 46, 40 58 C 46 42, 52 26, 56 16 C 60 28, 62 42, 65 52 C 68 42, 70 28, 74 16 C 78 26, 84 42, 90 58 C 94 46, 100 36, 104 24 C 110 36, 112 52, 110 72 Z"
+              fill={`url(#tierGold_${uniqueId})`}
               stroke="#FFFFFF"
               strokeWidth="1.2"
             />
 
-            {/* Center Shimmering Crescent Moon */}
-            <g transform="translate(60, 20)">
-              <path d="M -10 -6 C -10 6, 10 6, 10 -6 C 7 1, -7 1, -10 -6 Z" fill="#FFFFFF" />
-              {/* Droplet Ice Diamond */}
-              <circle cx="0" cy="-6" r="3.5" fill={`url(#gemRad1_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            {/* Center Crescent Moon & Ice Diamond */}
+            <g transform="translate(65, 22)">
+              <path d="M -11 -7 C -11 7, 11 7, 11 -7 C 8 1, -8 1, -11 -7 Z" fill="#FFFFFF" />
+              <circle cx="0" cy="-7" r="3.8" fill={`url(#crownGem_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.9" />
             </g>
 
-            {/* Tip Stars on Peaks */}
-            <circle cx="22" cy="22" r="2.5" fill="#FFFFFF" />
-            <circle cx="52" cy="14" r="2.8" fill="#FFFFFF" />
-            <circle cx="68" cy="14" r="2.8" fill="#FFFFFF" />
-            <circle cx="98" cy="22" r="2.5" fill="#FFFFFF" />
+            {/* Peaks tip stars */}
+            <circle cx="26" cy="24" r="2.8" fill="#FFFFFF" />
+            <circle cx="56" cy="16" r="3" fill="#FFFFFF" />
+            <circle cx="74" cy="16" r="3" fill="#FFFFFF" />
+            <circle cx="104" cy="24" r="2.8" fill="#FFFFFF" />
 
-            {/* Platinum Headband */}
-            <path d="M 12 68 C 35 73, 85 73, 108 68 L 108 79 C 85 85, 35 85, 12 79 Z" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
-            <path d="M 16 73 C 35 77, 85 77, 104 73" stroke="#FFFFFF" strokeWidth="1.5" strokeDasharray="2 4" strokeLinecap="round" />
-
-            {/* Center Ice Crystal Teardrop */}
-            <g transform="translate(60, 54)">
-              <ellipse cx="0" cy="0" rx="7" ry="9" fill={`url(#gemRad1_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
-              <ellipse cx="-2" cy="-2" rx="2" ry="3" fill="#FFFFFF" opacity="0.8" />
-            </g>
+            {/* Headband with VIP 2 Cartouche */}
+            <path d="M 16 72 C 40 78, 90 78, 114 72 L 114 86 C 90 92, 40 92, 16 86 Z" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1.2" />
+            <rect x="42" y="74" width="46" height="14" rx="7" fill={palette.capBg} stroke="#FFFFFF" strokeWidth="0.9" />
+            <text x="65" y="84.5" textAnchor="middle" fill="#FFFFFF" stroke={palette.goldLight} strokeWidth="0.4" fontSize="9" fontWeight="900" letterSpacing="0.8">VIP 2</text>
+            <ellipse cx="65,58" rx="8" ry="10" fill={`url(#crownGem_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
           </g>
         )}
 
         {/* ── 3. GOLD (VIP 3 Radiant Solar Sunburst Crown) ── */}
         {tier === 'gold' && (
-          <g id="realistic_gold">
-            {/* Crimson Imperial Cap */}
-            <path d="M 28 66 C 30 42, 44 32, 60 30 C 76 32, 90 42, 92 66 Z" fill={palette.capBg} />
+          <g id="crown_gold">
+            {/* Crimson Cap Dome */}
+            <path d="M 32 70 C 34 44, 48 34, 65 32 C 82 34, 96 44, 98 70 Z" fill={palette.capBg} />
 
             {/* 7 Radiant Sunburst Flares */}
-            <polygon points="12,68 2,36 22,48 24,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
-            <polygon points="24,68 18,24 36,42 38,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
-            <polygon points="36,68 40,14 52,44 54,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            <polygon points="16,72 6,38 26,50 28,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            <polygon points="28,72 22,26 40,44 42,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            <polygon points="40,72 44,16 56,46 58,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
 
-            {/* Highest Center Solar Flare with Sun Finial */}
-            <polygon points="52,68 60,4 68,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1.4" />
-            <polygon points="57,68 60,10 63,68" fill="#FFFFFF" />
-            <circle cx="60" cy="6" r="4.2" fill={`url(#gemRad1_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
+            {/* Highest Center Flare with Sun Finial */}
+            <polygon points="56,72 65,6 74,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1.4" />
+            <circle cx="65" cy="8" r="4.6" fill={`url(#crownGem_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
 
-            <polygon points="66,68 68,44 80,14 84,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
-            <polygon points="82,68 84,42 102,24 96,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
-            <polygon points="96,68 98,48 118,36 108,68" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            <polygon points="72,72 74,46 86,16 90,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            <polygon points="88,72 90,44 108,26 102,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
+            <polygon points="102,72 104,50 124,38 114,72" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
 
-            {/* Roman Laurel Golden Diadem Band */}
-            <path d="M 8 68 C 35 74, 85 74, 112 68 L 112 80 C 85 86, 35 86, 8 80 Z" fill={`url(#tierMetal_${uniqueId})`} stroke={palette.metalDark} strokeWidth="1.2" />
-            {[20, 36, 50, 60, 70, 84, 100].map((cx, i) => (
-              <ellipse key={i} cx={cx} cy="74" rx="3.5" ry="1.8" fill="#FFFFFF" transform={`rotate(${i % 2 === 0 ? 15 : -15}, ${cx}, 74)`} />
-            ))}
-
-            {/* Central Flaming Sun Medallion with Ruby */}
-            <g transform="translate(60, 52)">
-              <circle cx="0" cy="0" r="9" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
-              <circle cx="0" cy="0" r="7" fill={`url(#gemRad1_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
-              <circle cx="-2" cy="-2" r="2" fill="#FFFFFF" />
-            </g>
+            {/* Rim Band with VIP 3 Cartouche */}
+            <path d="M 12 72 C 40 78, 90 78, 118 72 L 118 86 C 90 92, 40 92, 12 86 Z" fill={`url(#tierGold_${uniqueId})`} stroke={palette.goldShadow} strokeWidth="1.2" />
+            <rect x="42" y="74" width="46" height="14" rx="7" fill={palette.capBg} stroke="#FFFFFF" strokeWidth="0.9" />
+            <text x="65" y="84.5" textAnchor="middle" fill="#FFFFFF" stroke={palette.goldLight} strokeWidth="0.4" fontSize="9" fontWeight="900" letterSpacing="0.8">VIP 3</text>
+            <circle cx="65" cy="56" r="9" fill={`url(#crownGem_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
           </g>
         )}
 
         {/* ── 4. ROYAL (VIP 4 Imperial Sovereign British Arch Crown) ── */}
         {tier === 'royal' && (
-          <g id="realistic_royal">
-            {/* Deep Imperial Blue Velvet Cap */}
-            <path d="M 24 66 C 24 36, 40 20, 60 18 C 80 20, 96 36, 96 66 Z" fill={palette.capBg} stroke={palette.metalShadow} strokeWidth="1" />
+          <g id="crown_royal">
+            {/* Deep Royal Velvet Cap Dome */}
+            <path d="M 28 70 C 28 38, 44 22, 65 20 C 86 22, 102 38, 102 70 Z" fill={palette.capBg} stroke={palette.goldShadow} strokeWidth="1" />
 
-            {/* 4 Crossing Heavy Golden Ribbed Arches */}
-            <path d="M 28 66 C 36 30, 48 18, 60 12 C 72 18, 84 30, 92 66" fill="none" stroke={`url(#tierMetal_${uniqueId})`} strokeWidth="4.5" strokeLinecap="round" />
-            <path d="M 28 66 C 36 30, 48 18, 60 12 C 72 18, 84 30, 92 66" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
+            {/* Ribbed Golden Crossing Arches */}
+            <path d="M 32 70 C 40 34, 52 20, 65 14 C 78 20, 90 34, 98 70" fill="none" stroke={`url(#tierGold_${uniqueId})`} strokeWidth="5" strokeLinecap="round" />
+            <path d="M 32 70 C 40 34, 52 20, 65 14 C 78 20, 90 34, 98 70" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
 
-            {/* Summit Golden Orb & Royal Cross */}
-            <g transform="translate(60, 10)">
-              <circle cx="0" cy="0" r="4.2" fill="#FFFFFF" stroke={palette.metalDark} strokeWidth="0.8" />
-              <path d="M 0 -8 L 0 -2 M -3 -5 L 3 -5" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="square" />
-            </g>
-
-            {/* 4 Fleur-de-lis Spires */}
-            <g transform="translate(26, 48)">
-              <path d="M 0 -12 C -5 -7, -5 -1, 0 3 C 5 -1, 5 -7, 0 -12 Z" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.6" />
-              <circle cx="0" cy="-12" r="1.8" fill="#FFFFFF" />
-            </g>
-            <g transform="translate(46, 42)">
-              <path d="M 0 -14 C -6 -8, -6 -1, 0 3 C 6 -1, 6 -8, 0 -14 Z" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.7" />
-              <circle cx="0" cy="-14" r="2" fill="#FFFFFF" />
-            </g>
-            <g transform="translate(74, 42)">
-              <path d="M 0 -14 C -6 -8, -6 -1, 0 3 C 6 -1, 6 -8, 0 -14 Z" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.7" />
-              <circle cx="0" cy="-14" r="2" fill="#FFFFFF" />
-            </g>
-            <g transform="translate(94, 48)">
-              <path d="M 0 -12 C -5 -7, -5 -1, 0 3 C 5 -1, 5 -7, 0 -12 Z" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.6" />
-              <circle cx="0" cy="-12" r="1.8" fill="#FFFFFF" />
+            {/* Summit Orb & Latin Cross */}
+            <g transform="translate(65, 11)">
+              <circle cx="0" cy="0" r="4.6" fill="#FFFFFF" stroke={palette.goldShadow} strokeWidth="0.8" />
+              <path d="M 0 -9 L 0 -2 M -3.5 -5.5 L 3.5 -5.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="square" />
+              <circle cx="0" cy="-5.5" r="1.4" fill={palette.gemPrimary} />
             </g>
 
-            {/* Sovereign Rim Band with Sapphire Cabochons */}
-            <path d="M 12 68 C 35 74, 85 74, 108 68 L 108 81 C 85 87, 35 87, 12 81 Z" fill={`url(#tierMetal_${uniqueId})`} stroke={palette.metalShadow} strokeWidth="1.4" />
-            {[20, 36, 50, 60, 70, 84, 100].map((cx, i) => (
-              <circle key={i} cx={cx} cy="74.5" r="3" fill={`url(#gemRad1_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.8" />
-            ))}
+            {/* Fleur-de-lis Spires */}
+            <circle cx="38" cy="26" r="3" fill={palette.gemPrimary} stroke="#FFFFFF" strokeWidth="0.8" />
+            <circle cx="92" cy="26" r="3" fill={palette.gemPrimary} stroke="#FFFFFF" strokeWidth="0.8" />
 
-            {/* Central Cushion-Cut Ceylon Sapphire */}
-            <g transform="translate(60, 50)">
-              <rect x="-8" y="-9" width="16" height="18" rx="3" fill={`url(#tierMetal_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
-              <rect x="-6" y="-7" width="12" height="14" rx="2" fill={`url(#gemRad1_${uniqueId})`} />
-              <circle cx="-2" cy="-2" r="1.5" fill="#FFFFFF" />
-            </g>
+            {/* Sovereign Rim Band with VIP 4 Cartouche */}
+            <path d="M 16 72 C 40 78, 90 78, 114 72 L 114 87 C 90 93, 40 93, 16 87 Z" fill={`url(#tierGold_${uniqueId})`} stroke={palette.goldShadow} strokeWidth="1.4" />
+            <rect x="40" y="74" width="50" height="15" rx="7.5" fill={palette.capBg} stroke="#FFFFFF" strokeWidth="1" />
+            <text x="65" y="85" textAnchor="middle" fill="#FFFFFF" stroke={palette.goldLight} strokeWidth="0.4" fontSize="9.5" fontWeight="900" letterSpacing="0.8">VIP 4</text>
+            <rect x="58" y="47" width="14" height="16" rx="3" fill={`url(#crownGem_${uniqueId})`} stroke="#FFFFFF" strokeWidth="1" />
           </g>
         )}
 
-        {/* ── 5. MYTHIC (VIP 5 Grand Celestial Winged Sovereign Crown) ── */}
+        {/* ── 5. MYTHIC (VIP 5 Grand Winged Lion Supreme Imperial Crown - 8K Masterpiece) ── */}
         {(tier === 'mythic' || tier === 'none') && (
-          <g id="realistic_mythic">
-            {/* Celestial Flank Wings */}
-            {/* Left Wing */}
+          <g id="crown_mythic">
+            {/* Grand Golden Wings Flanking Crown Apex (Left & Right) */}
+            {/* Left Wings */}
             <path
-              d="M 26 66 C 14 48, 4 30, -2 14 C 8 22, 18 34, 28 50 C 22 32, 14 16, 8 2 C 20 14, 30 28, 38 46 Z"
-              fill={`url(#tierMetal_${uniqueId})`}
+              d="M 32 66 C 14 48, -2 28, -8 8 C 8 20, 24 34, 38 52 Z"
+              fill={`url(#tierGold_${uniqueId})`}
               stroke="#FFFFFF"
+              strokeWidth="1"
+            />
+            <path
+              d="M 28 68 C 8 56, -10 44, -12 28 C 4 38, 20 50, 34 60 Z"
+              fill={palette.capBg}
+              stroke={`url(#tierGold_${uniqueId})`}
+              strokeWidth="0.9"
+            />
+            <path
+              d="M 30 74 C 12 72, -4 64, -8 48 C 8 56, 24 64, 34 70 Z"
+              fill={`url(#tierGold_${uniqueId})`}
+              stroke={palette.goldLight}
               strokeWidth="0.8"
             />
-            {/* Right Wing */}
+
+            {/* Right Wings (Mirrored) */}
             <path
-              d="M 94 66 C 106 48, 116 30, 122 14 C 112 22, 102 34, 92 50 C 98 32, 106 16, 112 2 C 100 14, 90 28, 82 46 Z"
-              fill={`url(#tierMetal_${uniqueId})`}
+              d="M 98 66 C 116 48, 132 28, 138 8 C 122 20, 106 34, 92 52 Z"
+              fill={`url(#tierGold_${uniqueId})`}
               stroke="#FFFFFF"
+              strokeWidth="1"
+            />
+            <path
+              d="M 102 68 C 122 56, 140 44, 142 28 C 126 38, 110 50, 96 60 Z"
+              fill={palette.capBg}
+              stroke={`url(#tierGold_${uniqueId})`}
+              strokeWidth="0.9"
+            />
+            <path
+              d="M 100 74 C 118 72, 134 64, 138 48 C 122 56, 106 64, 96 70 Z"
+              fill={`url(#tierGold_${uniqueId})`}
+              stroke={palette.goldLight}
               strokeWidth="0.8"
             />
 
-            {/* Cosmic Violet Void Cap */}
-            <path d="M 32 66 C 32 40, 42 24, 60 22 C 78 24, 88 40, 88 66 Z" fill={palette.capBg} />
+            {/* Royal Purple Velvet Cap Dome */}
+            <path d="M 34 68 C 34 34, 48 20, 65 18 C 82 20, 96 34, 96 68 Z" fill={palette.capBg} stroke={`url(#tierGold_${uniqueId})`} strokeWidth="1.2" />
 
-            {/* 5 Pinnacle Imperial Body */}
-            <path
-              d="M 28 68 C 28 50, 32 38, 36 28 C 40 38, 44 48, 48 54 C 52 40, 56 24, 60 16 C 64 24, 68 40, 72 54 C 76 48, 80 38, 84 28 C 88 38, 92 50, 92 68 Z"
-              fill={`url(#tierMetal_${uniqueId})`}
-              stroke="#FFFFFF"
-              strokeWidth="1.3"
-            />
+            {/* Massive 3D Heavy Golden Ribbed Arches */}
+            <path d="M 36 68 C 42 34, 52 20, 65 13 C 78 20, 88 34, 94 68" fill="none" stroke={`url(#tierGold_${uniqueId})`} strokeWidth="5" strokeLinecap="round" />
+            <path d="M 36 68 C 42 34, 52 20, 65 13 C 78 20, 88 34, 94 68" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
 
-            {/* Floating 8-Point Cosmic Star Finial at Apex */}
-            <g transform="translate(60, 8)">
-              <polygon
-                points="0,-10 2.5,-2.5 10,0 2.5,2.5 0,10 -2.5,2.5 -10,0 -2.5,-2.5"
-                fill="#FFFFFF"
-                stroke={palette.metalLight}
-                strokeWidth="0.8"
-                filter={`url(#sparkleGlow_${uniqueId})`}
-              />
-              <circle cx="0" cy="0" r="3.2" fill={`url(#gemRad1_${uniqueId})`} />
+            {/* Summit Orb & Latin Cross */}
+            <g transform="translate(65, 10)">
+              <circle cx="0" cy="0" r="5" fill="#FFFFFF" stroke={palette.goldShadow} strokeWidth="0.9" />
+              <path d="M 0 -10 L 0 -2 M -4 -6 L 4 -6" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="square" />
+              <circle cx="0" cy="-6" r="1.5" fill={palette.gemPrimary} />
             </g>
 
-            {/* Tip Pearls */}
-            <circle cx="36" cy="28" r="2.6" fill="#FFFFFF" />
-            <circle cx="84" cy="28" r="2.6" fill="#FFFFFF" />
+            {/* Rim Gem Spires */}
+            <circle cx="38" cy="26" r="3.2" fill={palette.gemPrimary} stroke="#FFFFFF" strokeWidth="0.9" />
+            <circle cx="92" cy="26" r="3.2" fill={palette.gemPrimary} stroke="#FFFFFF" strokeWidth="0.9" />
+            <circle cx="52" cy="20" r="2.5" fill="#FFFFFF" />
+            <circle cx="78" cy="20" r="2.5" fill="#FFFFFF" />
 
-            {/* Outer Orbital Ring */}
-            <ellipse cx="60" cy="56" rx="48" ry="14" fill="none" stroke="#FFFFFF" strokeWidth="0.7" strokeDasharray="3 4" opacity="0.7" />
-
-            {/* Multi-Tiered Pedestal Band */}
-            <path d="M 18 68 C 35 74, 85 74, 102 68 L 104 80 C 85 86, 35 86, 16 80 Z" fill={`url(#tierMetal_${uniqueId})`} stroke={palette.metalShadow} strokeWidth="1.2" />
-            {[26, 38, 50, 60, 70, 82, 94].map((cx, i) => (
-              <circle key={i} cx={cx} cy="74" r="2" fill="#FFFFFF" />
-            ))}
-
-            {/* Colossal Prismatic Diamond Heart in Center */}
-            <g transform="translate(60, 54)">
-              <polygon points="0,-11 9,-1 6,9 0,13 -6,9 -9,-1" fill="#FFFFFF" stroke={palette.metalLight} strokeWidth="0.8" />
-              <polygon points="0,-9 7,-1 5,7 0,10 -5,7 -7,-1" fill={`url(#gemRad1_${uniqueId})`} />
-              <circle cx="-2" cy="-2" r="1.6" fill="#FFFFFF" />
+            {/* 3D Sculpted Golden Lion Face at the Center */}
+            <g transform="translate(65, 46)">
+              {/* Mane */}
+              <circle cx="0" cy="0" r="15" fill={`url(#tierGold_${uniqueId})`} stroke="#FFFFFF" strokeWidth="0.9" />
+              <circle cx="0" cy="0" r="12" fill={palette.capBg} />
+              {/* Ears */}
+              <circle cx="-9" cy="-8" r="3.2" fill={`url(#tierGold_${uniqueId})`} />
+              <circle cx="9" cy="-8" r="3.2" fill={`url(#tierGold_${uniqueId})`} />
+              {/* Face mask */}
+              <path d="M -7 -4 C -5 -8, 5 -8, 7 -4 L 6 5 C 4 7, -4 7, -6 5 Z" fill={`url(#tierGold_${uniqueId})`} />
+              {/* Eyes */}
+              <circle cx="-3.5" cy="-1" r="1.3" fill="#FFFFFF" />
+              <circle cx="-3.5" cy="-1" r="0.7" fill={palette.gemPrimary} />
+              <circle cx="3.5" cy="-1" r="1.3" fill="#FFFFFF" />
+              <circle cx="3.5" cy="-1" r="0.7" fill={palette.gemPrimary} />
+              {/* Nose & Chin */}
+              <polygon points="0,2 -1.6,0 1.6,0" fill="#000000" />
+              <path d="M -2.5 4 C 0 7, 0 7, 2.5 4" stroke="#FFFFFF" strokeWidth="0.9" strokeLinecap="round" />
             </g>
+
+            {/* Sovereign Rim Base Band with VIP 5 Cartouche Banner */}
+            <path d="M 18 70 C 40 76, 90 76, 112 70 L 114 86 C 90 92, 40 92, 16 86 Z" fill={`url(#tierGold_${uniqueId})`} stroke={palette.goldShadow} strokeWidth="1.5" />
+            <rect x="38" y="73" width="54" height="16" rx="8" fill={palette.capBg} stroke="#FFFFFF" strokeWidth="1.1" filter={`url(#crownSparkle_${uniqueId})`} />
+            <text
+              x="65"
+              y="84.5"
+              textAnchor="middle"
+              fill="#FFFFFF"
+              stroke={palette.goldLight}
+              strokeWidth="0.5"
+              fontSize="10.5"
+              fontWeight="900"
+              fontFamily="system-ui, -apple-system, sans-serif"
+              letterSpacing="0.8"
+            >
+              VIP 5
+            </text>
           </g>
         )}
       </svg>

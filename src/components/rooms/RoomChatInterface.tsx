@@ -3,6 +3,7 @@ import { VoiceRoom, UserProfile, ChatMessage, Gift } from '../../types';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
 import { VIPName } from '../common/VIPName';
+import { VIPMessageBubble } from '../common/VIPMessageBubble';
 import {
   MessageCircle,
   Send,
@@ -175,76 +176,36 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
             const isSenderHost = msg.sender.id === room.host.id;
             const isSenderOwnerAndHost = isSenderOwner && isSenderHost;
             const isSenderMod = !isSenderHost && ((room.moderators || []).includes(msg.sender.id) || msg.sender.role === 'moderator');
-            const isSenderVip = msg.sender.vipTier && msg.sender.vipTier !== 'none';
+
+            const roleBadge = isSenderOwnerAndHost ? (
+              <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 via-yellow-400/20 to-amber-500/25 border border-amber-400/50 text-[9px] font-black text-amber-300 shrink-0 shadow-sm whitespace-nowrap">
+                المالك والمضيف 👑
+              </span>
+            ) : isSenderOwner ? (
+              <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-300 shrink-0 whitespace-nowrap">
+                المالك 👑
+              </span>
+            ) : isSenderHost ? (
+              <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-400 shrink-0 whitespace-nowrap">
+                المضيف 👑
+              </span>
+            ) : isSenderMod ? (
+              <span className="px-1.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-500/40 text-[9px] font-bold text-blue-300 shrink-0 whitespace-nowrap">
+                مشرف 🛡️
+              </span>
+            ) : null;
 
             return (
-              <div
+              <VIPMessageBubble
                 key={msg.id}
-                className={`flex items-start gap-2.5 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                {/* Avatar with Golden Glow Effect for VIP subscribers */}
-                <div
-                  className={`relative shrink-0 transition-all duration-300 ${
-                    isSenderVip
-                      ? 'p-0.5 rounded-full ring-2 ring-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.85)] bg-gradient-to-tr from-amber-500 to-yellow-300 animate-pulse'
-                      : ''
-                  }`}
-                >
-                  <AvatarWithFrame
-                    user={msg.sender}
-                    size="xs"
-                    showCrown={false}
-                    onClick={() => onUserClick(msg.sender)}
-                  />
-                </div>
-
-                <div
-                  className={`flex-1 min-w-0 rounded-2xl p-3 border transition-colors shadow-sm ${
-                    isMe
-                      ? 'bg-[#241A0B] hover:bg-[#2C1F0D] border-amber-500/60 shadow-amber-950/40 text-right'
-                      : 'bg-[#161826] hover:bg-[#1C1F32] border-zinc-700/80'
-                  }`}
-                >
-                  {/* Sender Name & Badges - Clean and never overlapping */}
-                  <div className={`flex items-center justify-between gap-1 mb-1.5 ${isMe ? 'flex-row-reverse' : ''}`}>
-                    <div className="flex items-center gap-1.5 truncate">
-                      <VIPName user={msg.sender} size="xs" showRoleTag={false} />
-                      {isSenderOwnerAndHost ? (
-                        <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 via-yellow-400/20 to-amber-500/25 border border-amber-400/50 text-[9px] font-black text-amber-300 shrink-0 shadow-sm whitespace-nowrap">
-                          المالك والمضيف 👑
-                        </span>
-                      ) : isSenderOwner ? (
-                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-300 shrink-0 whitespace-nowrap">
-                          المالك 👑
-                        </span>
-                      ) : isSenderHost ? (
-                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-400 shrink-0 whitespace-nowrap">
-                          المضيف 👑
-                        </span>
-                      ) : isSenderMod ? (
-                        <span className="px-1.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-500/40 text-[9px] font-bold text-blue-300 shrink-0 whitespace-nowrap">
-                          مشرف 🛡️
-                        </span>
-                      ) : null}
-                      {isMe && (
-                        <span className="text-[10px] text-amber-300/80 font-bold">
-                          (أنت)
-                        </span>
-                      )}
-                    </div>
-                    <span className={`text-[10px] font-mono shrink-0 ${isMe ? 'text-amber-200/80' : 'text-zinc-400'}`}>
-                      {msg.timestamp}
-                    </span>
-                  </div>
-
-                  {/* Message Text Content - High contrast for crystal-clear readability */}
-                  <p className={`text-[13px] break-words leading-relaxed whitespace-pre-wrap select-text tracking-wide ${
-                    isMe ? 'text-amber-50 font-semibold' : 'text-white font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]'
-                  }`}>
-                    {msg.content}
-                  </p>
-                </div>
-              </div>
+                sender={msg.sender}
+                content={msg.content}
+                timestamp={msg.timestamp}
+                isMe={isMe}
+                onUserClick={onUserClick}
+                additionalRoleBadge={roleBadge}
+                variant="room"
+              />
             );
           })
         )}
