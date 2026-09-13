@@ -26,10 +26,17 @@ import {
   Award,
   Shield,
   Layers,
-  Edit
+  Edit,
+  Lock,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
+import { 
+  MYTHIC_FRAMES, 
+  DEFAULT_MYTHIC_FRAME_ID, 
+  MythicFrameOption, 
+  getMythicFrameById 
+} from '../../data/mythicFrames';
 
 interface VIPStoreViewProps {
   currentUser: UserProfile;
@@ -37,6 +44,7 @@ interface VIPStoreViewProps {
   onSubmitRequest: (request: VIPSubscriptionRequest) => void;
   onOpenDirectContact: () => void;
   onEditContactInfo?: () => void;
+  onSelectMythicFrame?: (frameId: string) => void;
 }
 
 export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
@@ -45,8 +53,10 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
   onSubmitRequest,
   onOpenDirectContact,
   onEditContactInfo,
+  onSelectMythicFrame,
 }) => {
   const isOwner = currentUser.role === 'owner' || currentUser.id === 'user_owner';
+  const isMythicUser = currentUser.vipTier === 'mythic';
   const [selectedTier, setSelectedTier] = useState<VIPTier>('gold');
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [durationMonths, setDurationMonths] = useState<number>(3);
@@ -55,6 +65,37 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
   const [paymentRef, setPaymentRef] = useState('');
   const [notes, setNotes] = useState('');
   const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const [activeMythicFrameId, setActiveMythicFrameId] = useState<string>(
+    currentUser.mythicFrameId || DEFAULT_MYTHIC_FRAME_ID
+  );
+  const [mythicSuccessMsg, setMythicSuccessMsg] = useState<string | null>(null);
+
+  const handleChooseMythicFrame = (frame: MythicFrameOption) => {
+    if (!isMythicUser) {
+      setSelectedTier('mythic');
+      setShowRequestModal(true);
+      playSoundEffect('bell');
+      return;
+    }
+
+    setActiveMythicFrameId(frame.id);
+    onSelectMythicFrame?.(frame.id);
+    playSoundEffect('vip_fanfare');
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#FBBF24', '#A855F7', '#EF4444', '#06B6D4', '#10B981'],
+      });
+    } catch (e) {
+      console.warn(e);
+    }
+    setMythicSuccessMsg(`تم اعتماد إطار "${frame.nameAr}" بنجاح لحسابك الأسطوري!`);
+    setTimeout(() => {
+      setMythicSuccessMsg(null);
+    }, 4500);
+  };
 
   const [previewCrownTier, setPreviewCrownTier] = useState<VIPTier>('mythic');
 
@@ -504,7 +545,225 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
         </div>
       </div>
 
-      {/* 3D VIP Master Crowns Gallery & Interactive Showcase */}
+      {/* ========================================================================= */}
+      {/* EXCLUSIVE MYTHIC VIP FRAMES SHOWCASE & SELECTOR (HIGHEST TIER EXCLUSIVE) */}
+      {/* ========================================================================= */}
+      <div className="rounded-3xl bg-gradient-to-b from-[#1E0616] via-[#14051B] to-[#0A040E] border-2 border-amber-400/60 p-5 sm:p-7 md:p-8 shadow-2xl relative overflow-hidden ring-1 ring-amber-400/30">
+        {/* Subtle Background Radial Glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 rounded-full bg-purple-600/15 blur-3xl pointer-events-none" />
+
+        {/* Section Header */}
+        <div className="relative z-10 text-center max-w-2xl mx-auto mb-6">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 via-purple-600/30 to-amber-500/25 border border-amber-400/60 text-amber-300 text-xs font-black mb-2.5 shadow-lg">
+            <Sparkles className="w-4 h-4 text-yellow-300 animate-spin" />
+            <span>ميزة حصرية خاصة بأعلى فئة فقط (VIP الأسطوري)</span>
+            <Crown className="w-4 h-4 text-amber-400" />
+          </div>
+
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white flex items-center justify-center gap-2">
+            <span>صالة اختيار إطارات VIP الأسطوري الملكية</span>
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-300 mt-2 leading-relaxed">
+            تمتلك أعلى رتبة في الديوان امتيازاً فريداً من نوعه: <span className="text-amber-300 font-bold">حرية اختيار شكل ونوع الإطار الملكي</span> الذي يحيط بصورتك في جميع الغرف والملفات، مع خيارات أسطورية مستوحاة من عروش السلاطين، لهب التنانين، سديم المجرات، وصقور الصحراء.
+          </p>
+        </div>
+
+        {/* Status Alert Banner */}
+        <div className="relative z-10 mb-6">
+          {isMythicUser ? (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-900/30 to-amber-500/15 border border-amber-400/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-right">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center shrink-0 text-amber-300">
+                  <Check className="w-5 h-5 text-amber-300" />
+                </div>
+                <div>
+                  <div className="text-xs font-black text-amber-300 flex items-center gap-1.5 justify-center sm:justify-start">
+                    <span>ميزة الاختيار مفعلة بالكامل لحسابك الملكي</span>
+                    <span className="px-2 py-0.5 rounded-md bg-amber-400/20 text-[10px] text-amber-200 border border-amber-400/40">VIP 5 MYTHIC</span>
+                  </div>
+                  <p className="text-xs text-zinc-300 mt-0.5">
+                    اختر أي إطار من التشكيلة الأسطورية أدناه وسيتم اعتماده وتحديثه فوراً لصورتك وملفك الشخصي.
+                  </p>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center gap-2">
+                <span className="text-[11px] text-zinc-400">الإطار المعتمد الآن:</span>
+                <span className="px-2.5 py-1 rounded-xl bg-[#0F041A] border border-amber-400 text-amber-300 font-bold text-xs">
+                  {getMythicFrameById(activeMythicFrameId).nameAr}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-[#14061A]/90 border border-purple-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-right">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-950/80 border border-purple-500/60 flex items-center justify-center shrink-0 text-purple-300">
+                  <Lock className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <div className="text-xs font-black text-purple-200 flex items-center gap-1.5 justify-center sm:justify-start">
+                    <span>ميزة حصرية مقفلة - خاصة فقط برتبة VIP الأسطوري (VIP 5)</span>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    أنت حالياً برتبة ({currentUser.vipTier === 'none' ? 'عضو عادي' : VIP_CONFIGS[currentUser.vipTier]?.nameAr}). لا يستطيع المشتركون في الفئات الأخرى تغيير شكل الإطار. يمكنك معاينة الأشكال أدناه والترقية لفتح كامل التشكيلة.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedTier('mythic');
+                  setShowRequestModal(true);
+                  playSoundEffect('vip_fanfare');
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-300 hover:brightness-110 text-black font-black text-xs shadow-lg flex items-center gap-1.5 shrink-0 transition-transform active:scale-95"
+              >
+                <Crown className="w-4 h-4 text-black" />
+                <span>الترقية إلى VIP الأسطوري لفتح الإطارات</span>
+              </button>
+            </div>
+          )}
+
+          {/* Success toast notification */}
+          {mythicSuccessMsg && (
+            <div className="mt-3 p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/60 text-emerald-200 text-xs font-black flex items-center justify-center gap-2 animate-bounce shadow-xl">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>{mythicSuccessMsg}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 6 Mythic Frames Grid */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+          {MYTHIC_FRAMES.map((frame) => {
+            const isActive = isMythicUser && activeMythicFrameId === frame.id;
+
+            return (
+              <div
+                key={frame.id}
+                onClick={() => handleChooseMythicFrame(frame)}
+                className={`relative rounded-2xl p-4 md:p-5 border transition-all duration-300 flex flex-col justify-between cursor-pointer group ${
+                  isActive
+                    ? 'bg-gradient-to-b from-[#25072B] via-[#1A0520] to-[#0D0312] border-yellow-400 shadow-[0_0_25px_rgba(245,158,11,0.4)] ring-2 ring-yellow-400'
+                    : 'bg-[#0E0416]/90 border-purple-900/50 hover:border-amber-400/60 hover:bg-[#150620]'
+                }`}
+              >
+                {/* Active Selected Badge */}
+                {isActive && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-black text-[10px] shadow-lg flex items-center gap-1 border border-yellow-200">
+                    <Check className="w-3 h-3 text-black stroke-[3]" />
+                    <span>إطارك المعتمد حالياً</span>
+                  </div>
+                )}
+
+                <div>
+                  {/* Card Top Title & Icon */}
+                  <div className="flex items-center justify-between gap-2 border-b border-purple-900/40 pb-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{frame.icon}</span>
+                      <div>
+                        <h4 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                          {frame.nameAr}
+                        </h4>
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          {frame.nameEn}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <span
+                        className="w-3 h-3 rounded-full border border-white/20 shadow-sm"
+                        style={{ backgroundColor: frame.primaryColor }}
+                        title="اللون الأساسي"
+                      />
+                      <span
+                        className="w-3 h-3 rounded-full border border-white/20 shadow-sm"
+                        style={{ backgroundColor: frame.secondaryColor }}
+                        title="اللون الثانوي"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Frame Live Avatar Preview */}
+                  <div className="py-4 my-2 flex flex-col items-center justify-center bg-[#07020B]/70 rounded-2xl border border-purple-900/30">
+                    <div className="relative transform group-hover:scale-105 transition-transform duration-300">
+                      <AvatarWithFrame
+                        avatarUrl={currentUser.avatar}
+                        vipTier="mythic"
+                        mythicFrameId={frame.id}
+                        size="xl"
+                        showCrown={true}
+                      />
+                    </div>
+                    <span className="mt-3 text-[11px] font-bold text-amber-300 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-400/30">
+                      {frame.badgeTitleAr}
+                    </span>
+                  </div>
+
+                  {/* Frame Description */}
+                  <p className="text-xs text-zinc-300 leading-relaxed mt-2 mb-3 min-h-[38px]">
+                    {frame.descriptionAr}
+                  </p>
+
+                  {/* Features badges */}
+                  <div className="grid grid-cols-2 gap-1.5 my-3">
+                    {frame.featuresAr.map((feat, idx) => (
+                      <div
+                        key={idx}
+                        className="text-[10px] text-zinc-300 bg-[#170524] px-2 py-1 rounded-lg border border-purple-900/40 flex items-center gap-1 truncate"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                        <span className="truncate">{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Card Action Button */}
+                <div className="pt-3 border-t border-purple-900/30 mt-2">
+                  {isMythicUser ? (
+                    isActive ? (
+                      <button
+                        disabled
+                        className="w-full py-2.5 px-3 rounded-xl text-xs font-black bg-gradient-to-r from-amber-400 to-yellow-500 text-black flex items-center justify-center gap-1.5 shadow-md"
+                      >
+                        <Check className="w-4 h-4 text-black stroke-[3]" />
+                        <span>الإطار المعتمد لصورتك</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChooseMythicFrame(frame);
+                        }}
+                        className="w-full py-2.5 px-3 rounded-xl text-xs font-black bg-[#1F0728] hover:bg-gradient-to-r hover:from-amber-400 hover:to-yellow-500 text-amber-300 hover:text-black border border-amber-400/50 flex items-center justify-center gap-1.5 shadow-md transition-all duration-200"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>اختيار وتفعيل هذا الإطار الملكي</span>
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTier('mythic');
+                        setShowRequestModal(true);
+                        playSoundEffect('bell');
+                      }}
+                      className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-[#14061A] hover:bg-purple-950/80 text-zinc-400 hover:text-amber-300 border border-purple-900/60 flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Lock className="w-3.5 h-3.5 text-amber-400" />
+                      <span>ترقية إلى VIP الأسطوري لفتح الإطار</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       <div className="rounded-3xl bg-gradient-to-b from-[#110B18] via-[#09060E] to-[#050408] border border-amber-500/30 p-6 md:p-8 shadow-2xl relative overflow-hidden">
         <div className="text-center max-w-xl mx-auto mb-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-black mb-2">

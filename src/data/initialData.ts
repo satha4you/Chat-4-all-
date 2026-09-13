@@ -451,6 +451,7 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
     role: 'owner',
     vipTier: 'mythic',
+    mythicFrameId: 'mythic_sovereign_wings',
     vipExpiresAt: '2099-12-31T23:59:59Z',
     isVipActive: true,
     country: {
@@ -506,6 +507,8 @@ export const INITIAL_ROOMS: VoiceRoom[] = [
     tags: ['#ديوان_ملكي', '#أدب', '#حوار_راقي'],
     backgroundTheme: 'from-amber-950/60 via-zinc-900 to-black',
     cardGradient: 'royal_gold',
+    verified: true,
+    verificationType: 'gold',
     ratings: {
       'user_member_1': 5,
       'user_member_2': 5,
@@ -535,6 +538,8 @@ export const INITIAL_ROOMS: VoiceRoom[] = [
     tags: ['#طرب', '#عود', '#موسيقى_أصيلة'],
     backgroundTheme: 'from-purple-950/60 via-zinc-900 to-black',
     cardGradient: 'amethyst_purple',
+    verified: true,
+    verificationType: 'blue',
     ratings: {
       'user_member_1': 5,
       'user_member_6': 5,
@@ -563,6 +568,8 @@ export const INITIAL_ROOMS: VoiceRoom[] = [
     tags: ['#VIP_ملكي', '#رويال', '#استثمار'],
     backgroundTheme: 'from-amber-900/60 via-purple-950/60 to-black',
     cardGradient: 'crimson_ruby',
+    verified: true,
+    verificationType: 'gold',
     ratings: {
       'user_member_2': 5,
       'user_member_3': 5,

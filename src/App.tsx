@@ -27,6 +27,7 @@ import { BottomNav } from './components/navigation/BottomNav';
 import { RoomCard } from './components/rooms/RoomCard';
 import { LiveVoiceRoom } from './components/rooms/LiveVoiceRoom';
 import { CreateRoomModal } from './components/rooms/CreateRoomModal';
+import { EditRoomModal } from './components/rooms/EditRoomModal';
 import { UserProfileModal } from './components/profile/UserProfileModal';
 import { EditProfileModal } from './components/profile/EditProfileModal';
 import { VIPStoreView } from './components/vip/VIPStoreView';
@@ -109,9 +110,17 @@ export default function App() {
     return INITIAL_USERS;
   });
 
-  // Never persist user login session across visits or logouts:
-  // Every user must log in using email and passcode each time they enter or logout.
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Persist user login session across visits so the user is never automatically logged out
+  // The user only logs out when they manually click logout
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem('royal_voice_current_user_id');
+      if (saved) return saved;
+    } catch (e) {
+      console.warn(e);
+    }
+    return 'user_owner';
+  });
 
   const [rooms, setRooms] = useState<VoiceRoom[]>(() => {
     const saved = localStorage.getItem('royal_voice_rooms');
@@ -168,10 +177,11 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Modals
-  const [showEmailLogin, setShowEmailLogin] = useState<boolean>(true);
+  const [showEmailLogin, setShowEmailLogin] = useState<boolean>(false);
   const [showAdmin, setShowAdmin] = useState<boolean>(false);
   const [showAdminAuth, setShowAdminAuth] = useState<boolean>(false);
   const [showCreateRoom, setShowCreateRoom] = useState<boolean>(false);
+  const [roomToEdit, setRoomToEdit] = useState<VoiceRoom | null>(null);
   const [showEditProfile, setShowEditProfile] = useState<boolean>(false);
   const [showOwnerContactModal, setShowOwnerContactModal] = useState<boolean>(false);
   const [ownerContactEditMode, setOwnerContactEditMode] = useState<boolean>(false);
@@ -240,15 +250,18 @@ export default function App() {
     }
   }, [contactInfo]);
 
-  // Clean up any persisted login sessions so users must always authenticate on load and logout
+  // Persist logged-in user session so user remains logged in across visits
   useEffect(() => {
     try {
-      localStorage.removeItem('royal_voice_current_user_id');
-      localStorage.removeItem('royal_voice_has_email_login');
+      if (currentUserId) {
+        localStorage.setItem('royal_voice_current_user_id', currentUserId);
+      } else {
+        localStorage.removeItem('royal_voice_current_user_id');
+      }
     } catch (e) {
       console.warn(e);
     }
-  }, []);
+  }, [currentUserId]);
 
   const currentUser = currentUserId ? (users.find((u) => u.id === currentUserId) || null) : null;
   const pendingRequestsCount = vipRequests.filter((r) => r.status === 'pending').length;
@@ -256,9 +269,12 @@ export default function App() {
   // Authentication Handlers
   const handleEmailLoginSuccess = (user: UserProfile) => {
     setCurrentUserId(user.id);
-    // Explicitly do not persist login session across visits or logouts
-    localStorage.removeItem('royal_voice_current_user_id');
-    localStorage.removeItem('royal_voice_has_email_login');
+    try {
+      localStorage.setItem('royal_voice_current_user_id', user.id);
+      localStorage.setItem('royal_voice_has_email_login', 'true');
+    } catch (e) {
+      console.warn(e);
+    }
     setShowEmailLogin(false);
   };
 
@@ -443,8 +459,12 @@ export default function App() {
 
   const handleLoginAsOwner = () => {
     setCurrentUserId('user_owner');
-    localStorage.removeItem('royal_voice_current_user_id');
-    localStorage.removeItem('royal_voice_has_email_login');
+    try {
+      localStorage.setItem('royal_voice_current_user_id', 'user_owner');
+      localStorage.setItem('royal_voice_has_email_login', 'true');
+    } catch (e) {
+      console.warn(e);
+    }
     setShowEmailLogin(false);
     playSoundEffect('vip_fanfare');
   };
@@ -508,6 +528,7 @@ export default function App() {
           <LiveVoiceRoom
             room={activeVoiceRoom}
             currentUser={currentUser}
+            allUsers={users}
             onLeave={() => setActiveVoiceRoom(null)}
             onUserClick={(user) => setInspectedUser(user)}
             onUpdateRoom={(updated) => handleUpdateRoom(updated.id, updated)}
@@ -633,6 +654,7 @@ export default function App() {
               onSubmitRequest={(req) => setVipRequests((prev) => [req, ...prev])}
               onOpenDirectContact={() => handleOpenOwnerContact(false)}
               onEditContactInfo={() => handleOpenOwnerContact(true)}
+              onSelectMythicFrame={(frameId) => handleUpdateUser(currentUser.id, { mythicFrameId: frameId })}
             />
           ) : activeTab === 'top_users' ? (
             /* Leaderboard of Top VIP Supporters */
@@ -807,6 +829,7 @@ export default function App() {
                           playSoundEffect('bell');
                         }}
                         onUserClick={(user) => setInspectedUser(user)}
+                        onEditRoom={(r) => setRoomToEdit(r)}
                         onToggleFeatured={(r) => {
                           const nextFeatured = !r.isFeatured;
                           handleUpdateRoom(r.id, { isFeatured: nextFeatured });
@@ -940,6 +963,25 @@ export default function App() {
             setActiveTab('vip_club');
           }}
         />
+
+        {/* Edit Room & Verification Modal */}
+        {roomToEdit && (
+          <EditRoomModal
+            room={roomToEdit}
+            isOpen={!!roomToEdit}
+            onClose={() => setRoomToEdit(null)}
+            onSave={(roomId, updates) => {
+              handleUpdateRoom(roomId, updates);
+              setRoomToEdit(null);
+              playSoundEffect('vip_fanfare');
+              confetti({
+                particleCount: 60,
+                spread: 70,
+                origin: { y: 0.5 },
+              });
+            }}
+          />
+        )}
 
       </div>
     </DeviceFrame>

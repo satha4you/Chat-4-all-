@@ -35,11 +35,18 @@ import {
   Zap,
   Coins,
   Star,
+  UserPlus,
+  UserMinus,
+  Edit3,
 } from 'lucide-react';
+import { RoomModeratorsModal } from './RoomModeratorsModal';
+import { EditRoomModal } from './EditRoomModal';
+import { RoomVerifiedBadge } from '../common/RoomVerifiedBadge';
 
 interface LiveVoiceRoomProps {
   room: VoiceRoom;
   currentUser: UserProfile;
+  allUsers?: UserProfile[];
   onLeave: () => void;
   onUserClick: (user: UserProfile) => void;
   onUpdateRoom: (updatedRoom: VoiceRoom) => void;
@@ -48,6 +55,7 @@ interface LiveVoiceRoomProps {
 export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   room,
   currentUser,
+  allUsers = [],
   onLeave,
   onUserClick,
   onUpdateRoom,
@@ -101,6 +109,8 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const [selectedSeatAction, setSelectedSeatAction] = useState<RoomSeat | null>(null);
   const [vipEntranceBanner, setVipEntranceBanner] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
+  const [showModeratorsModal, setShowModeratorsModal] = useState<boolean>(false);
+  const [showEditRoomModal, setShowEditRoomModal] = useState<boolean>(false);
 
   // Rating computations
   const ratingsRecord = room.ratings || {};
@@ -149,9 +159,65 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const animationFrameRef = useRef<number | null>(null);
 
   const isHost = room.host.id === currentUser.id;
-  const isModerator = isHost || room.moderators.includes(currentUser.id) || currentUser.role === 'owner';
+  const isModerator = isHost || (room.moderators || []).includes(currentUser.id) || currentUser.role === 'owner' || currentUser.role === 'admin';
+  const isRoomManager = isHost || currentUser.role === 'owner' || currentUser.role === 'admin';
   const mySeatIndex = currentSeats.findIndex((s) => s.user?.id === currentUser.id);
   const isSeated = mySeatIndex !== -1;
+
+  // Handle assigning a room moderator by room owner or general manager
+  const handleAssignModerator = (targetUser: UserProfile) => {
+    if (!isRoomManager) return;
+    const currentMods = room.moderators || [];
+    if (currentMods.includes(targetUser.id)) return;
+
+    const updatedMods = [...currentMods, targetUser.id];
+    const updatedRoom: VoiceRoom = {
+      ...room,
+      moderators: updatedMods,
+    };
+    onUpdateRoom(updatedRoom);
+
+    playSoundEffect('vip_fanfare');
+    confetti({
+      particleCount: 75,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+
+    const modAnnounceMsg: ChatMessage = {
+      id: 'msg_mod_' + Date.now(),
+      roomId: room.id,
+      sender: currentUser,
+      content: `🛡️ قام ${room.host.id === currentUser.id ? 'مالك الغرفة' : 'المدير العام'} (${currentUser.nickname}) بتعيين ${targetUser.nickname} مشرفاً رسمياً للغرفة لمساعدته في الإدارة!`,
+      type: 'system',
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages((prev) => [...prev, modAnnounceMsg]);
+  };
+
+  // Handle removing a room moderator
+  const handleRemoveModerator = (userId: string) => {
+    if (!isRoomManager) return;
+    const currentMods = room.moderators || [];
+    const updatedMods = currentMods.filter((id) => id !== userId);
+    const updatedRoom: VoiceRoom = {
+      ...room,
+      moderators: updatedMods,
+    };
+    onUpdateRoom(updatedRoom);
+
+    playSoundEffect('bell');
+
+    const removeModMsg: ChatMessage = {
+      id: 'msg_unmod_' + Date.now(),
+      roomId: room.id,
+      sender: currentUser,
+      content: `ℹ️ تم إلغاء صلاحية الإشراف عن العضو من قِبل إدارة الغرفة.`,
+      type: 'system',
+      timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages((prev) => [...prev, removeModMsg]);
+  };
 
   // VIP Entry Fanfare on join
   useEffect(() => {
@@ -596,9 +662,22 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
             </button>
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                 <h2 className="text-xs sm:text-sm font-black text-zinc-100 truncate">{room.title}</h2>
+                {room.verified && room.verificationType && (
+                  <RoomVerifiedBadge type={room.verificationType} size="sm" showLabel={true} />
+                )}
                 {room.type === 'vip' && <VIPBadge tier="gold" size="xs" showText={false} />}
+                {isRoomManager && (
+                  <button
+                    onClick={() => setShowEditRoomModal(true)}
+                    className="p-1 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-[10px] font-black flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
+                    title="تعديل اسم الغرفة وتوثيقها"
+                  >
+                    <Edit3 className="w-3 h-3 text-amber-400" />
+                    <span className="hidden xs:inline">تعديل الغرفة والتوثيق</span>
+                  </button>
+                )}
               </div>
               <div className="text-[10px] text-zinc-400 flex items-center gap-1 truncate mt-0.5">
                 <span className="text-zinc-500 shrink-0">المضيف:</span>
@@ -685,6 +764,21 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                 </>
               )}
             </button>
+
+            {/* Room Moderators Management Button for Room Owner or General Manager */}
+            {isRoomManager && (
+              <button
+                onClick={() => setShowModeratorsModal(true)}
+                className="px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-950/80 to-indigo-950/80 hover:from-blue-900/90 text-blue-300 hover:text-blue-100 border border-blue-500/50 text-[10px] font-black flex items-center gap-1 shadow-sm transition-all active:scale-95 cursor-pointer shrink-0"
+                title="إدارة وتعيين مشرفي الغرفة لمساعدتك في التحكم والمايكات"
+              >
+                <Shield className="w-3 h-3 text-blue-400" />
+                <span>مشرفو الغرفة</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-blue-500/30 text-blue-200 text-[9px] font-bold">
+                  {(room.moderators || []).length}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Featured Room Pill & Admin Upgrade Button */}
@@ -838,19 +932,35 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                       )}
                     </div>
 
-                    {/* Seat Label & Nickname */}
-                    <div className="mt-1 text-center max-w-[76px] truncate">
+                    {/* Seat Label & Nickname - Formatted so Owner & Host never overlap */}
+                    <div className="mt-1 text-center w-full max-w-[84px] sm:max-w-[92px] px-0.5 flex flex-col items-center justify-center">
                       {isOccupied ? (
                         <>
-                          <div className="truncate px-0.5">
-                            <VIPName user={seat.user!} size="xs" showCrown={false} />
+                          <div className="truncate max-w-full px-0.5">
+                            <VIPName user={seat.user!} size="xs" showCrown={false} showRoleTag={false} />
                           </div>
-                          {seat.seatIndex === 0 ? (
-                            <span className="block text-[9px] text-amber-400 font-bold leading-tight">المضيف 👑</span>
+                          {seat.user?.role === 'owner' && (seat.seatIndex === 0 || seat.user?.id === room.host.id) ? (
+                            <span className="mt-0.5 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 via-yellow-400/20 to-amber-500/25 border border-amber-400/50 text-[9px] font-black text-amber-300 leading-tight whitespace-nowrap shadow-sm">
+                              المالك والمضيف 👑
+                            </span>
+                          ) : seat.user?.role === 'owner' ? (
+                            <span className="mt-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-black text-amber-300 leading-tight whitespace-nowrap">
+                              المالك 👑
+                            </span>
+                          ) : seat.seatIndex === 0 || seat.user?.id === room.host.id ? (
+                            <span className="mt-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-400 leading-tight whitespace-nowrap">
+                              المضيف 👑
+                            </span>
+                          ) : (room.moderators || []).includes(seat.user?.id || '') ? (
+                            <span className="mt-0.5 px-1.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-500/40 text-[9px] font-bold text-blue-300 leading-tight whitespace-nowrap">
+                              مشرف 🛡️
+                            </span>
                           ) : seat.isSpeaking ? (
-                            <span className="block text-[8px] text-emerald-400 font-bold leading-tight animate-pulse">يتحدث...</span>
+                            <span className="mt-0.5 px-1.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-[8px] font-bold text-emerald-300 leading-tight animate-pulse whitespace-nowrap">
+                              🎙️ يتحدث...
+                            </span>
                           ) : (
-                            <span className="block text-[8px] text-zinc-500 leading-tight truncate">
+                            <span className="block text-[8px] text-zinc-500 leading-tight truncate max-w-full mt-0.5">
                               {seat.user?.country?.flag ? `${seat.user.country.flag} ` : ''}مستوى {seat.user?.level || 1}
                             </span>
                           )}
@@ -897,6 +1007,8 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
             setShowGiftModal(true);
           }}
           isModerator={isModerator}
+          isUserOnMic={isSeated}
+          micSeatIndex={mySeatIndex !== -1 ? mySeatIndex : undefined}
         />
       </div>
 
@@ -1208,6 +1320,32 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
             </div>
 
             <div className="space-y-2">
+              {/* Room Owner / Manager Moderator Assignment Action */}
+              {isRoomManager && selectedSeatAction.user && selectedSeatAction.user.id !== room.host.id && (
+                <button
+                  onClick={() => {
+                    const isAlreadyMod = (room.moderators || []).includes(selectedSeatAction.user!.id);
+                    if (isAlreadyMod) {
+                      handleRemoveModerator(selectedSeatAction.user!.id);
+                    } else {
+                      handleAssignModerator(selectedSeatAction.user!);
+                    }
+                    setSelectedSeatAction(null);
+                  }}
+                  className={`w-full py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-between transition-colors ${
+                    (room.moderators || []).includes(selectedSeatAction.user.id)
+                      ? 'bg-rose-950/40 hover:bg-rose-900/60 border-rose-600/50 text-rose-300'
+                      : 'bg-blue-950/40 hover:bg-blue-900/60 border-blue-500/50 text-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    <span>{(room.moderators || []).includes(selectedSeatAction.user.id) ? 'إلغاء إشراف الغرفة عن العضو' : 'تعيين العضو كمشرف للغرفة 🛡️'}</span>
+                  </div>
+                  <span className="text-[10px] text-amber-300 font-bold">صلاحية المالك</span>
+                </button>
+              )}
+
               {selectedSeatAction.user && (
                 <>
                   <button
@@ -1261,47 +1399,161 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
               <button onClick={() => setShowAudienceModal(false)} className="text-zinc-400 hover:text-white">✕</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-3 space-y-2">
+            <div className="flex-1 overflow-y-auto py-3 space-y-3">
+              {/* Quick Moderator Management shortcut for Room Owner */}
+              {isRoomManager && (
+                <div className="p-2.5 rounded-2xl bg-blue-950/30 border border-blue-500/40 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-blue-400" />
+                    <span className="text-xs font-black text-blue-200">مشرفو الغرفة ({(room.moderators || []).length})</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowAudienceModal(false);
+                      setShowModeratorsModal(true);
+                    }}
+                    className="px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black"
+                  >
+                    لوحة المشرفين ⚙️
+                  </button>
+                </div>
+              )}
+
               <div className="text-[11px] font-bold text-amber-400">المتحدثون على المسرح:</div>
               {currentSeats
                 .filter((s) => s.user)
-                .map((s) => (
-                  <div
-                    key={s.seatIndex}
-                    onClick={() => {
-                      setShowAudienceModal(false);
-                      onUserClick(s.user!);
-                    }}
-                    className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 flex items-center justify-between cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <AvatarWithFrame user={s.user!} size="xs" showCrown={false} />
-                      <VIPName user={s.user!} size="xs" />
+                .map((s) => {
+                  const isMod = (room.moderators || []).includes(s.user!.id);
+                  const isUserHost = s.user!.id === room.host.id;
+
+                  return (
+                    <div
+                      key={s.seatIndex}
+                      className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 flex items-center justify-between"
+                    >
+                      <div
+                        onClick={() => {
+                          setShowAudienceModal(false);
+                          onUserClick(s.user!);
+                        }}
+                        className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
+                      >
+                        <AvatarWithFrame user={s.user!} size="xs" showCrown={false} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <VIPName user={s.user!} size="xs" />
+                            {isUserHost ? (
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
+                                المالك 👑
+                              </span>
+                            ) : isMod ? (
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-black">
+                                مشرف 🛡️
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="text-[10px] text-zinc-500">مقعد {s.seatIndex + 1}</span>
+                        </div>
+                      </div>
+
+                      {isRoomManager && !isUserHost && (
+                        <div>
+                          {isMod ? (
+                            <button
+                              onClick={() => handleRemoveModerator(s.user!.id)}
+                              className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[10px] font-bold border border-rose-500/40"
+                              title="إلغاء الإشراف"
+                            >
+                              إلغاء
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleAssignModerator(s.user!)}
+                              className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black flex items-center gap-1 shadow-sm"
+                              title="تعيين كمشرف للغرفة"
+                            >
+                              <UserPlus className="w-3 h-3" />
+                              <span>مشرف</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">
-                      مقعد {s.seatIndex + 1}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
 
               <div className="text-[11px] font-bold text-zinc-400 mt-4">المستمعون:</div>
-              {room.listeners.map((user) => (
-                <div
-                  key={user.id}
+              {room.listeners.map((user) => {
+                const isMod = (room.moderators || []).includes(user.id);
+                const isUserHost = user.id === room.host.id;
+
+                return (
+                  <div
+                    key={user.id}
+                    className="p-2 rounded-xl bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800/60 flex items-center justify-between"
+                  >
+                    <div
+                      onClick={() => {
+                        setShowAudienceModal(false);
+                        onUserClick(user);
+                      }}
+                      className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
+                    >
+                      <AvatarWithFrame user={user} size="xs" showCrown={false} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <VIPName user={user} size="xs" />
+                          {isMod && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-black">
+                              مشرف 🛡️
+                            </span>
+                          )}
+                        </div>
+                        <VIPBadge tier={user.vipTier} size="xs" />
+                      </div>
+                    </div>
+
+                    {isRoomManager && !isUserHost && (
+                      <div>
+                        {isMod ? (
+                          <button
+                            onClick={() => handleRemoveModerator(user.id)}
+                            className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[10px] font-bold border border-rose-500/40"
+                            title="إلغاء الإشراف"
+                          >
+                            إلغاء
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleAssignModerator(user)}
+                            className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black flex items-center gap-1 shadow-sm"
+                            title="تعيين كمشرف للغرفة"
+                          >
+                            <UserPlus className="w-3 h-3" />
+                            <span>مشرف</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {isRoomManager && (
+              <div className="pt-3 border-t border-zinc-800 shrink-0">
+                <button
                   onClick={() => {
                     setShowAudienceModal(false);
-                    onUserClick(user);
+                    setShowModeratorsModal(true);
                   }}
-                  className="p-2 rounded-xl bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800/60 flex items-center justify-between cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white text-xs font-black shadow flex items-center justify-center gap-2"
                 >
-                  <div className="flex items-center gap-2">
-                    <AvatarWithFrame user={user} size="xs" showCrown={false} />
-                    <VIPName user={user} size="xs" />
-                  </div>
-                  <VIPBadge tier={user.vipTier} size="xs" />
-                </div>
-              ))}
-            </div>
+                  <Shield className="w-4 h-4" />
+                  <span>فتح إدارة مشرفي الغرفة كاملة 🛡️</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1313,6 +1565,54 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         room={room}
         currentUser={currentUser}
         onSaveRating={handleSaveRoomRating}
+      />
+
+      {/* Room Moderators Management Modal */}
+      <RoomModeratorsModal
+        isOpen={showModeratorsModal}
+        onClose={() => setShowModeratorsModal(false)}
+        room={room}
+        currentUser={currentUser}
+        allUsers={allUsers}
+        onAssignModerator={handleAssignModerator}
+        onRemoveModerator={handleRemoveModerator}
+      />
+
+      {/* Edit Room & Verification Modal for Owner / Host */}
+      <EditRoomModal
+        room={room}
+        isOpen={showEditRoomModal}
+        onClose={() => setShowEditRoomModal(false)}
+        onSave={(roomId, updates) => {
+          const updatedRoom: VoiceRoom = {
+            ...room,
+            ...updates,
+          };
+          onUpdateRoom(updatedRoom);
+          
+          playSoundEffect('vip_fanfare');
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.5 },
+          });
+
+          const starNote = updates.verified
+            ? ` وتم توثيق الغرفة رسميًا بـ (${updates.verificationType === 'blue' ? 'النجمة الزرقاء 🔷' : 'النجمة الذهبية ⭐'})`
+            : '';
+          
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `msg_room_edit_${Date.now()}`,
+              roomId: room.id,
+              sender: currentUser,
+              content: `📢 قام مالك الغرفة بتحديث إعدادات وبيانات الغرفة ("${updates.title || room.title}")${starNote}!`,
+              type: 'system',
+              timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+            },
+          ]);
+        }}
       />
     </div>
   );

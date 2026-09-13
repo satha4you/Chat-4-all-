@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { UserProfile, VIPTier } from '../../types';
 import { VIPAvatarFrameSVG } from './VIPAvatarFrameSVG';
 import { RealisticCrown } from './RealisticCrown';
+import { getMythicFrameById } from '../../data/mythicFrames';
 
 interface AvatarWithFrameProps {
   user?: UserProfile | null;
   avatarUrl?: string;
   vipTier?: VIPTier;
+  mythicFrameId?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'hero';
   isSpeaking?: boolean;
   audioLevel?: number; // 0 to 100
@@ -21,6 +23,7 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
   user,
   avatarUrl,
   vipTier,
+  mythicFrameId,
   size = 'md',
   isSpeaking = false,
   audioLevel = 0,
@@ -32,6 +35,8 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const tier: VIPTier = user?.vipTier || vipTier || 'none';
+  const effectiveMythicFrameId = user?.mythicFrameId || mythicFrameId;
+  const mythicOption = getMythicFrameById(effectiveMythicFrameId);
   const avatar = user?.avatar || avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
   const userLevel = level ?? user?.level ?? 1;
 
@@ -92,39 +97,45 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
     switch (tier) {
       case 'mythic':
         return {
-          wrapper: 'p-1.5 bg-gradient-to-tr from-[#FFE58F] via-[#A855F7] via-[#FBBF24] to-[#4C1D95] rounded-full shadow-[0_0_36px_rgba(245,158,11,0.95),0_0_18px_rgba(234,179,8,0.8)] ring-2 ring-[#FFDF73]',
-          border: 'border-2 border-[#FFFBEB]',
-          glowColor: '#F59E0B',
+          wrapper: `p-1.5 bg-gradient-to-tr ${mythicOption.previewRingGradient} rounded-full shadow-[0_0_36px_rgba(245,158,11,0.95),0_0_18px_rgba(234,179,8,0.8)] ring-2 ring-[#FFDF73]`,
+          border: mythicOption.borderClasses,
+          glowColor: mythicOption.primaryColor,
+          glowAuraCss: mythicOption.glowAuraCss,
         };
       case 'royal':
         return {
           wrapper: 'p-1.5 bg-gradient-to-tr from-[#9333EA] via-[#F59E0B] via-[#C084FC] to-[#3B0764] rounded-full shadow-[0_0_30px_rgba(245,158,11,0.9),0_0_16px_rgba(234,179,8,0.7)] ring-2 ring-amber-300',
           border: 'border-2 border-amber-200',
           glowColor: '#EAB308',
+          glowAuraCss: 'radial-gradient(circle, rgba(234, 179, 8, 0.45) 0%, rgba(147, 51, 234, 0.25) 50%, transparent 80%)',
         };
       case 'gold':
         return {
           wrapper: 'p-1 bg-gradient-to-tr from-[#EAB308] via-[#F59E0B] via-[#FDE047] to-[#78350F] rounded-full shadow-[0_0_26px_rgba(245,158,11,0.85),0_0_14px_rgba(234,179,8,0.7)] ring-2 ring-yellow-300',
           border: 'border-2 border-yellow-100',
           glowColor: '#F59E0B',
+          glowAuraCss: 'radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(245, 158, 11, 0.25) 50%, transparent 80%)',
         };
       case 'silver':
         return {
           wrapper: 'p-1 bg-gradient-to-tr from-[#E2E8F0] via-[#FBBF24] to-[#64748B] rounded-full shadow-[0_0_22px_rgba(245,158,11,0.75),0_0_12px_rgba(234,179,8,0.6)] ring-1.5 ring-amber-300',
           border: 'border-2 border-slate-100',
           glowColor: '#F59E0B',
+          glowAuraCss: 'radial-gradient(circle, rgba(226, 232, 240, 0.4) 0%, rgba(245, 158, 11, 0.2) 50%, transparent 80%)',
         };
       case 'bronze':
         return {
           wrapper: 'p-1 bg-gradient-to-tr from-[#B45309] via-[#F59E0B] to-[#78350F] rounded-full shadow-[0_0_20px_rgba(245,158,11,0.7),0_0_10px_rgba(217,119,6,0.6)] ring-1.5 ring-amber-400',
           border: 'border-2 border-amber-300',
           glowColor: '#D97706',
+          glowAuraCss: 'radial-gradient(circle, rgba(217, 119, 6, 0.45) 0%, rgba(180, 83, 9, 0.25) 50%, transparent 80%)',
         };
       default:
         return {
           wrapper: 'p-0.5 bg-zinc-800 rounded-full border border-zinc-700',
           border: '',
           glowColor: '#22c55e',
+          glowAuraCss: '',
         };
     }
   };
@@ -156,7 +167,12 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
 
       {/* Ornate Royal Golden Purple VIP Profile Frame */}
       {tier !== 'none' && (
-        <VIPAvatarFrameSVG tier={tier} size={size} showTopCrown={false} />
+        <VIPAvatarFrameSVG 
+          tier={tier} 
+          size={size} 
+          showTopCrown={false} 
+          mythicFrameId={tier === 'mythic' ? mythicOption.id : undefined}
+        />
       )}
 
       {/* Radiant Golden Glow Aura for VIP Subscribers */}
@@ -164,9 +180,9 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
         <div
           className="absolute -inset-1 rounded-full pointer-events-none transition-opacity duration-300 z-0 animate-pulse"
           style={{
-            background: 'radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(245, 158, 11, 0.25) 50%, transparent 80%)',
-            boxShadow: '0 0 16px 4px rgba(245, 158, 11, 0.7), 0 0 28px 8px rgba(234, 179, 8, 0.35)',
-            filter: 'drop-shadow(0 0 8px #F59E0B)',
+            background: frame.glowAuraCss || 'radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(245, 158, 11, 0.25) 50%, transparent 80%)',
+            boxShadow: `0 0 16px 4px ${frame.glowColor}99, 0 0 28px 8px ${frame.glowColor}4D`,
+            filter: `drop-shadow(0 0 8px ${frame.glowColor})`,
           }}
         />
       )}

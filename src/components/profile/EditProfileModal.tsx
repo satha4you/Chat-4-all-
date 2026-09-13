@@ -7,6 +7,7 @@ import { RealisticCrown } from '../common/RealisticCrown';
 import { RealisticTierEmblem } from '../common/RealisticTierEmblem';
 import { playSoundEffect } from '../../utils/soundEffects';
 import { getVIPTheme, ALL_VIP_THEMES } from '../../data/vipThemes';
+import { MYTHIC_FRAMES, DEFAULT_MYTHIC_FRAME_ID, getMythicFrameById } from '../../data/mythicFrames';
 
 interface EditProfileModalProps {
   user: UserProfile;
@@ -58,6 +59,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [selectedCountryCode, setSelectedCountryCode] = useState(user.country.code);
   const [vipTier, setVipTier] = useState<VIPTier>(user.vipTier || 'none');
   const [themeColor, setThemeColor] = useState<VIPThemeColorKey>(user.themeColor || 'royal_gold');
+  const [mythicFrameId, setMythicFrameId] = useState<string>(user.mythicFrameId || DEFAULT_MYTHIC_FRAME_ID);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -73,6 +75,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setSelectedCountryCode(user.country.code);
       setVipTier(user.vipTier || 'none');
       setThemeColor(user.themeColor || 'royal_gold');
+      setMythicFrameId(user.mythicFrameId || DEFAULT_MYTHIC_FRAME_ID);
       setUploadError(null);
     }
   }, [user, isOpen]);
@@ -169,6 +172,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       avatar: customAvatarUrl.trim() || currentAvatar,
       vipTier: vipTier,
       themeColor: vipTier !== 'none' ? themeColor : undefined,
+      mythicFrameId: vipTier === 'mythic' ? mythicFrameId : undefined,
       country: {
         code: countryObj.code,
         nameAr: countryObj.nameAr,
@@ -532,6 +536,65 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Exclusive Mythic Frame Selector (Only for highest VIP tier) */}
+          {vipTier === 'mythic' && (
+            <div className="p-4 rounded-2xl bg-gradient-to-b from-[#1C051B] to-[#0E0312] border-2 border-amber-400/50 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                  <Crown className="w-4 h-4 text-amber-400" />
+                  <span>تخصيص إطار VIP الأسطوري (ميزة حصرية لأعلى فئة)</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold">
+                  VIP 5
+                </span>
+              </div>
+
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
+                بصفتك مشتركاً في أعلى فئة، اختر شكل ونوع الإطار الذي يحيط بصورتك في المنصة:
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {MYTHIC_FRAMES.map((f) => {
+                  const isSelected = mythicFrameId === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => {
+                        setMythicFrameId(f.id);
+                        playSoundEffect('vip_fanfare');
+                      }}
+                      className={`p-2.5 rounded-xl border text-right transition-all flex flex-col items-center text-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-400 ring-2 ring-amber-400/70 shadow-lg'
+                          : 'bg-[#100416] border-purple-900/40 hover:border-amber-400/40 text-zinc-300'
+                      }`}
+                    >
+                      <div className="relative my-1">
+                        <AvatarWithFrame
+                          avatarUrl={effectiveAvatar}
+                          vipTier="mythic"
+                          mythicFrameId={f.id}
+                          size="sm"
+                          showCrown={false}
+                        />
+                      </div>
+                      <span className="text-base">{f.icon}</span>
+                      <span className="text-[11px] font-black text-amber-200 line-clamp-1">
+                        {f.nameAr}
+                      </span>
+                      {isSelected && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-400 text-black font-black">
+                          المختار حالياً
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Status (Bio message) */}
           <div>

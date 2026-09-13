@@ -106,6 +106,7 @@ export interface UserProfile {
   themeColor?: VIPThemeColorKey;
   verified?: boolean;
   verificationType?: 'gold' | 'blue';
+  mythicFrameId?: string;
 }
 
 export interface RoomSeat {
@@ -151,6 +152,8 @@ export interface VoiceRoom {
   tags: string[];
   backgroundTheme: string;
   cardGradient?: string; // تدرج لون الغلاف (Gradient) لبطاقة الغرفة
+  verified?: boolean; // توثيق الغرفة بنجمة معتمدة
+  verificationType?: 'gold' | 'blue'; // نوع التوثيق: نجمة ذهبية أو نجمة زرقاء
   ratings?: Record<string, number>; // معرف المستخدم -> التقييم من 1 إلى 5
   averageRating?: number; // متوسط تقييم الغرفة بالنجوم
   totalRatingsCount?: number; // إجمالي عدد المقيمين

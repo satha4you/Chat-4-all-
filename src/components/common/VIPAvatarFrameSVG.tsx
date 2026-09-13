@@ -6,6 +6,7 @@ interface VIPAvatarFrameSVGProps {
   size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'hero';
   className?: string;
   showTopCrown?: boolean;
+  mythicFrameId?: string;
 }
 
 export const VIPAvatarFrameSVG: React.FC<VIPAvatarFrameSVGProps> = ({
@@ -13,11 +14,114 @@ export const VIPAvatarFrameSVG: React.FC<VIPAvatarFrameSVGProps> = ({
   size,
   className = '',
   showTopCrown = true,
+  mythicFrameId,
 }) => {
   if (tier === 'none') return null;
 
+  const getMythicConfig = (frameId?: string) => {
+    switch (frameId) {
+      case 'mythic_fire_dragon':
+        return {
+          label: 'VIP 5',
+          subTitle: 'FIRE DRAGON',
+          primaryGold: '#EF4444',
+          secondaryGold: '#FDE047',
+          deepGold: '#991B1B',
+          purpleVelvet: '#450A0A',
+          accentGem: '#F59E0B',
+          gemGlow: 'rgba(239, 68, 68, 0.95)',
+          gemCore: '#DC2626',
+          leafWingStart: '#FEE2E2',
+          leafWingEnd: '#7F1D1D',
+          wingScale: 1.22,
+          wreathStroke: 3.8,
+        };
+      case 'mythic_cosmic_nebula':
+        return {
+          label: 'VIP 5',
+          subTitle: 'COSMIC NEBULA',
+          primaryGold: '#06B6D4',
+          secondaryGold: '#E0F2FE',
+          deepGold: '#312E81',
+          purpleVelvet: '#0F172A',
+          accentGem: '#8B5CF6',
+          gemGlow: 'rgba(6, 182, 212, 0.95)',
+          gemCore: '#6366F1',
+          leafWingStart: '#E0E7FF',
+          leafWingEnd: '#3730A3',
+          wingScale: 1.18,
+          wreathStroke: 3.6,
+        };
+      case 'mythic_golden_falcon':
+        return {
+          label: 'VIP 5',
+          subTitle: 'GOLDEN FALCON',
+          primaryGold: '#F59E0B',
+          secondaryGold: '#FEF9C3',
+          deepGold: '#78350F',
+          purpleVelvet: '#451A03',
+          accentGem: '#FBBF24',
+          gemGlow: 'rgba(245, 158, 11, 0.98)',
+          gemCore: '#B45309',
+          leafWingStart: '#FEF08A',
+          leafWingEnd: '#92400E',
+          wingScale: 1.24,
+          wreathStroke: 4.0,
+        };
+      case 'mythic_ruby_ottoman':
+        return {
+          label: 'VIP 5',
+          subTitle: 'IMPERIAL RUBY',
+          primaryGold: '#DC2626',
+          secondaryGold: '#FDE68A',
+          deepGold: '#450A0A',
+          purpleVelvet: '#1F040C',
+          accentGem: '#EF4444',
+          gemGlow: 'rgba(220, 38, 38, 0.95)',
+          gemCore: '#991B1B',
+          leafWingStart: '#FECDD3',
+          leafWingEnd: '#881337',
+          wingScale: 1.16,
+          wreathStroke: 3.8,
+        };
+      case 'mythic_cyber_glory':
+        return {
+          label: 'VIP 5',
+          subTitle: 'CYBER AURORA',
+          primaryGold: '#10B981',
+          secondaryGold: '#A7F3D0',
+          deepGold: '#064E3B',
+          purpleVelvet: '#022C22',
+          accentGem: '#34D399',
+          gemGlow: 'rgba(16, 185, 129, 0.95)',
+          gemCore: '#047857',
+          leafWingStart: '#D1FAE5',
+          leafWingEnd: '#065F46',
+          wingScale: 1.18,
+          wreathStroke: 3.6,
+        };
+      case 'mythic_sovereign_wings':
+      default:
+        return {
+          label: 'VIP 5',
+          subTitle: 'MYTHIC SULTAN',
+          primaryGold: '#FDE047',
+          secondaryGold: '#FFFFFF',
+          deepGold: '#3B0764',
+          purpleVelvet: '#1B042F',
+          accentGem: '#C084FC',
+          gemGlow: 'rgba(216, 180, 254, 0.98)',
+          gemCore: '#7E22CE',
+          leafWingStart: '#F3E8FF',
+          leafWingEnd: '#2E0854',
+          wingScale: 1.18,
+          wreathStroke: 3.6,
+        };
+    }
+  };
+
   // Royal Golden Purple Color & Aesthetic Configuration for each VIP Tier
-  const tierConfig = {
+  const tierConfig = tier === 'mythic' ? getMythicConfig(mythicFrameId) : {
     bronze: {
       label: 'VIP 1',
       subTitle: 'BRONZE ROYAL',
@@ -77,21 +181,6 @@ export const VIPAvatarFrameSVG: React.FC<VIPAvatarFrameSVGProps> = ({
       leafWingEnd: '#3B0764',
       wingScale: 1.08,
       wreathStroke: 3.4,
-    },
-    mythic: {
-      label: 'VIP 5',
-      subTitle: 'MYTHIC SULTAN',
-      primaryGold: '#FDE047',
-      secondaryGold: '#FFFFFF',
-      deepGold: '#3B0764',
-      purpleVelvet: '#1B042F',
-      accentGem: '#C084FC',
-      gemGlow: 'rgba(216, 180, 254, 0.98)',
-      gemCore: '#7E22CE',
-      leafWingStart: '#F3E8FF',
-      leafWingEnd: '#2E0854',
-      wingScale: 1.15,
-      wreathStroke: 3.6,
     },
   }[tier];
 

@@ -28,6 +28,8 @@ interface RoomChatInterfaceProps {
   onClearChat?: () => void;
   onOpenGiftModal?: () => void;
   isModerator?: boolean;
+  isUserOnMic?: boolean;
+  micSeatIndex?: number;
 }
 
 const QUICK_GREETINGS = [
@@ -51,6 +53,8 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
   onClearChat,
   onOpenGiftModal,
   isModerator = false,
+  isUserOnMic = false,
+  micSeatIndex,
 }) => {
   const [inputText, setInputText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -167,8 +171,10 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
 
             // Text Message from Participant
             const isMe = msg.sender.id === currentUser.id;
-            const isHostMsg = msg.sender.id === room.host.id;
-            const isModMsg = !isHostMsg && (room.moderators.includes(msg.sender.id) || msg.sender.role === 'owner');
+            const isSenderOwner = msg.sender.role === 'owner';
+            const isSenderHost = msg.sender.id === room.host.id;
+            const isSenderOwnerAndHost = isSenderOwner && isSenderHost;
+            const isSenderMod = !isSenderHost && ((room.moderators || []).includes(msg.sender.id) || msg.sender.role === 'moderator');
             const isSenderVip = msg.sender.vipTier && msg.sender.vipTier !== 'none';
 
             return (
@@ -199,20 +205,27 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
                       : 'bg-[#161826] hover:bg-[#1C1F32] border-zinc-700/80'
                   }`}
                 >
-                  {/* Sender Name & Badges */}
+                  {/* Sender Name & Badges - Clean and never overlapping */}
                   <div className={`flex items-center justify-between gap-1 mb-1.5 ${isMe ? 'flex-row-reverse' : ''}`}>
                     <div className="flex items-center gap-1.5 truncate">
-                      <VIPName user={msg.sender} size="xs" />
-                      {isHostMsg && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/25 border border-amber-500/50 text-[10px] font-black text-amber-300 shrink-0">
+                      <VIPName user={msg.sender} size="xs" showRoleTag={false} />
+                      {isSenderOwnerAndHost ? (
+                        <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 via-yellow-400/20 to-amber-500/25 border border-amber-400/50 text-[9px] font-black text-amber-300 shrink-0 shadow-sm whitespace-nowrap">
+                          المالك والمضيف 👑
+                        </span>
+                      ) : isSenderOwner ? (
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-300 shrink-0 whitespace-nowrap">
+                          المالك 👑
+                        </span>
+                      ) : isSenderHost ? (
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-400 shrink-0 whitespace-nowrap">
                           المضيف 👑
                         </span>
-                      )}
-                      {isModMsg && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-blue-500/25 border border-blue-500/50 text-[10px] font-black text-blue-300 shrink-0">
+                      ) : isSenderMod ? (
+                        <span className="px-1.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-500/40 text-[9px] font-bold text-blue-300 shrink-0 whitespace-nowrap">
                           مشرف 🛡️
                         </span>
-                      )}
+                      ) : null}
                       {isMe && (
                         <span className="text-[10px] text-amber-300/80 font-bold">
                           (أنت)
@@ -277,6 +290,41 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
         </div>
       )}
 
+      {/* Mic ascend writing area bar - Completely neat and organized without overlap */}
+      {isUserOnMic && (
+        <div className="px-3 py-1.5 bg-gradient-to-r from-amber-950/70 via-[#181308] to-[#0A0B12] border-t border-amber-500/30 flex items-center justify-between gap-2 text-[11px] shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-zinc-400 font-bold text-[10px] shrink-0">مكان كتابة المتحدث:</span>
+            <div className="truncate">
+              {currentUser.role === 'owner' && currentUser.id === room.host.id ? (
+                <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 to-yellow-400/20 border border-amber-400/50 text-amber-300 font-black text-[10px]">
+                  المالك والمضيف 👑
+                </span>
+              ) : currentUser.role === 'owner' ? (
+                <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 font-black text-[10px]">
+                  المالك 👑
+                </span>
+              ) : currentUser.id === room.host.id ? (
+                <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-400 font-black text-[10px]">
+                  المضيف 👑
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-[10px]">
+                  متحدث على المايك 🎙️
+                </span>
+              )}
+            </div>
+          </div>
+          <span className="text-[10px] text-zinc-400 font-medium shrink-0">
+            {micSeatIndex !== undefined ? `المقعد #${micSeatIndex + 1}` : 'على المسرح'}
+          </span>
+        </div>
+      )}
+
       {/* Message Input & Send Form - High contrast input and clear labels */}
       <form
         onSubmit={handleSubmit}
@@ -311,7 +359,17 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder={`اكتب رسالة واضحة لرواد الغرفة...`}
+          placeholder={
+            isUserOnMic
+              ? currentUser.role === 'owner' && currentUser.id === room.host.id
+                ? 'اكتب رسالتك بصفتك (المالك والمضيف 👑)...'
+                : currentUser.role === 'owner'
+                  ? 'اكتب رسالتك بصفتك (المالك 👑)...'
+                  : currentUser.id === room.host.id
+                    ? 'اكتب رسالتك بصفتك (المضيف 👑)...'
+                    : 'اكتب رسالتك كمتحدث على المايك 🎙️...'
+              : 'اكتب رسالة واضحة لرواد الغرفة...'
+          }
           maxLength={250}
           className="flex-1 bg-[#151726] border-2 border-zinc-700 focus:border-amber-400 rounded-xl px-3.5 py-2 text-xs font-medium text-white placeholder-zinc-400 focus:outline-none transition-colors min-w-0"
         />

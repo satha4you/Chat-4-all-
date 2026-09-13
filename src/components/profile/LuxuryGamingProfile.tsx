@@ -289,7 +289,12 @@ export const LuxuryGamingProfile: React.FC<LuxuryGamingProfileProps> = ({
 
               {/* Ornate Royal VIP Profile Frame */}
               {effectiveTier && (
-                <VIPAvatarFrameSVG tier={effectiveTier} size="xl" showTopCrown={false} />
+                <VIPAvatarFrameSVG
+                  tier={effectiveTier}
+                  mythicFrameId={effectiveTier === 'mythic' ? user.mythicFrameId : undefined}
+                  size="xl"
+                  showTopCrown={false}
+                />
               )}
 
               {/* Pulsing Light Ring with Dynamic Theme Glow */}

@@ -3,7 +3,8 @@ import { VoiceRoom, VIPTier, UserProfile } from '../../types';
 import { VIPBadge } from '../common/VIPBadge';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPName } from '../common/VIPName';
-import { Users, Lock, Crown, Mic, Sparkles, Pin, Star } from 'lucide-react';
+import { RoomVerifiedBadge } from '../common/RoomVerifiedBadge';
+import { Users, Lock, Crown, Mic, Sparkles, Pin, Star, Edit3 } from 'lucide-react';
 import { ROOM_CARD_GRADIENTS } from '../../data/roomGradients';
 
 interface RoomCardProps {
@@ -12,6 +13,7 @@ interface RoomCardProps {
   onJoin: (room: VoiceRoom) => void;
   onUserClick?: (user: any) => void;
   onToggleFeatured?: (room: VoiceRoom) => void;
+  onEditRoom?: (room: VoiceRoom) => void;
 }
 
 export const RoomCard: React.FC<RoomCardProps> = ({ 
@@ -20,6 +22,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   onJoin, 
   onUserClick,
   onToggleFeatured,
+  onEditRoom,
 }) => {
   const activeSpeakers = room.seats.filter((s) => s.user !== null);
   const hasActiveSpeakers = activeSpeakers.length > 0;
@@ -27,6 +30,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   const isPrivate = room.type === 'private';
   const isFeatured = room.isFeatured;
   const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+  const canEdit = isAdmin || currentUser?.id === room.host.id;
 
   // Gradient cover style
   const gradientConfig = ROOM_CARD_GRADIENTS.find((g) => g.id === room.cardGradient) || (
@@ -116,6 +120,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               مثبت
             </span>
           )}
+          {room.verified && room.verificationType && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 border shrink-0 ${
+                room.verificationType === 'blue'
+                  ? 'bg-sky-500/15 text-sky-300 border-sky-400/30'
+                  : 'bg-amber-500/15 text-amber-300 border-amber-400/30'
+              }`}
+              title={room.verificationType === 'blue' ? 'غرفة موثقة بالنجمة الزرقاء ⭐' : 'غرفة موثقة بالنجمة الذهبية ⭐'}
+            >
+              <RoomVerifiedBadge type={room.verificationType} size="xs" />
+              <span>{room.verificationType === 'blue' ? 'موثقة زرقاء' : 'موثقة ذهبية'}</span>
+            </span>
+          )}
         </div>
 
         {/* Left side: Rating and Listeners count - Always clean and distinct */}
@@ -172,9 +189,27 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* Title & Host info */}
       <div className="mt-3 mb-3">
-        <h3 className="text-sm sm:text-base font-black text-zinc-100 line-clamp-1 group-hover:text-amber-300 transition-colors leading-snug">
-          {room.title}
-        </h3>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h3 className="text-sm sm:text-base font-black text-zinc-100 line-clamp-1 group-hover:text-amber-300 transition-colors leading-snug">
+            {room.title}
+          </h3>
+          {room.verified && room.verificationType && (
+            <RoomVerifiedBadge type={room.verificationType} size="sm" />
+          )}
+          {canEdit && onEditRoom && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditRoom(room);
+              }}
+              className="p-1 rounded-lg bg-zinc-800/80 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 border border-zinc-700/60 hover:border-amber-400/40 transition-colors cursor-pointer shrink-0 ml-auto"
+              title="تعديل اسم الغرفة وتوثيقها"
+            >
+              <Edit3 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
         {room.description && (
           <p className="text-xs text-zinc-400 line-clamp-1 mt-1">
             {room.description}
