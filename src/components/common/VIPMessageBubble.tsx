@@ -2,6 +2,7 @@ import React from 'react';
 import { VIPTier, UserProfile } from '../../types';
 import { VIPName } from './VIPName';
 import { AvatarWithFrame } from './AvatarWithFrame';
+import { getMythicFrameById, DEFAULT_MYTHIC_FRAME_ID } from '../../data/mythicFrames';
 
 interface VIPMessageBubbleProps {
   sender: UserProfile;
@@ -14,48 +15,99 @@ interface VIPMessageBubbleProps {
 }
 
 /**
- * Winged Lion Crest SVG tailored specifically for each VIP stage,
- * directly modeled from the luxury golden-purple royal crest in IMG_3783.jpeg
+ * Winged Lion Crest SVG tailored specifically for each VIP stage and chosen mythic frame
  */
-export const WingedLionCrest: React.FC<{ tier: VIPTier; size?: number; className?: string }> = ({
+export const WingedLionCrest: React.FC<{
+  tier: VIPTier;
+  size?: number;
+  className?: string;
+  frameId?: string;
+}> = ({
   tier,
-  size = 34,
+  size = 30,
   className = '',
+  frameId,
 }) => {
   if (tier === 'none') return null;
 
   const uniqueId = React.useId().replace(/:/g, '_');
 
-  // Colors per VIP Tier
-  const tierColors = {
-    bronze: {
-      goldLight: '#FED7AA',
-      goldMid: '#D97706',
-      goldDark: '#78350F',
-      wingPurple: '#3E1C0A',
-      wingPurpleLight: '#EA580C',
-      gem: '#F97316',
-      label: 'VIP 1',
-    },
-    silver: {
-      goldLight: '#FFFFFF',
-      goldMid: '#94A3B8',
-      goldDark: '#334155',
-      wingPurple: '#1E293B',
-      wingPurpleLight: '#38BDF8',
-      gem: '#06B6D4',
-      label: 'VIP 2',
-    },
-    gold: {
-      goldLight: '#FEF08A',
-      goldMid: '#EAB308',
-      goldDark: '#713F12',
-      wingPurple: '#422006',
-      wingPurpleLight: '#F59E0B',
-      gem: '#DC2626',
-      label: 'VIP 3',
-    },
-    royal: {
+  let tierColors = {
+    goldLight: '#FFFBEB',
+    goldMid: '#FBBF24',
+    goldDark: '#78350F',
+    wingPurple: '#2E0854',
+    wingPurpleLight: '#C084FC',
+    gem: '#F43F5E',
+    label: 'VIP 5',
+  };
+
+  if (tier === 'mythic') {
+    const mythicOpt = getMythicFrameById(frameId || DEFAULT_MYTHIC_FRAME_ID);
+    if (mythicOpt.id === 'mythic_golden_falcon') {
+      tierColors = {
+        goldLight: '#FFFBEB',
+        goldMid: '#F59E0B',
+        goldDark: '#78350F',
+        wingPurple: '#2E1906',
+        wingPurpleLight: '#FBBF24',
+        gem: '#FEF08A',
+        label: 'VIP 5',
+      };
+    } else if (mythicOpt.id === 'mythic_fire_dragon') {
+      tierColors = {
+        goldLight: '#FFF1F2',
+        goldMid: '#EF4444',
+        goldDark: '#7F1D1D',
+        wingPurple: '#2C0606',
+        wingPurpleLight: '#F59E0B',
+        gem: '#FCD34D',
+        label: 'VIP 5',
+      };
+    } else if (mythicOpt.id === 'mythic_cosmic_nebula') {
+      tierColors = {
+        goldLight: '#F0FDFA',
+        goldMid: '#06B6D4',
+        goldDark: '#164E63',
+        wingPurple: '#170D38',
+        wingPurpleLight: '#A855F7',
+        gem: '#38BDF8',
+        label: 'VIP 5',
+      };
+    } else if (mythicOpt.id === 'mythic_ruby_ottoman') {
+      tierColors = {
+        goldLight: '#FFF1F2',
+        goldMid: '#E11D48',
+        goldDark: '#881337',
+        wingPurple: '#29050C',
+        wingPurpleLight: '#F59E0B',
+        gem: '#FCD34D',
+        label: 'VIP 5',
+      };
+    } else if (mythicOpt.id === 'mythic_cyber_glory') {
+      tierColors = {
+        goldLight: '#ECFDF5',
+        goldMid: '#10B981',
+        goldDark: '#064E3B',
+        wingPurple: '#042217',
+        wingPurpleLight: '#34D399',
+        gem: '#F59E0B',
+        label: 'VIP 5',
+      };
+    } else {
+      // mythic_sovereign_wings
+      tierColors = {
+        goldLight: '#FFFBEB',
+        goldMid: '#FBBF24',
+        goldDark: '#78350F',
+        wingPurple: '#2E0854',
+        wingPurpleLight: '#C084FC',
+        gem: '#F43F5E',
+        label: 'VIP 5',
+      };
+    }
+  } else if (tier === 'royal') {
+    tierColors = {
       goldLight: '#FEF9C3',
       goldMid: '#F59E0B',
       goldDark: '#581C87',
@@ -63,17 +115,38 @@ export const WingedLionCrest: React.FC<{ tier: VIPTier; size?: number; className
       wingPurpleLight: '#C084FC',
       gem: '#9333EA',
       label: 'VIP 4',
-    },
-    mythic: {
-      goldLight: '#FFFBEB',
-      goldMid: '#FBBF24',
+    };
+  } else if (tier === 'gold') {
+    tierColors = {
+      goldLight: '#FEF08A',
+      goldMid: '#EAB308',
+      goldDark: '#713F12',
+      wingPurple: '#422006',
+      wingPurpleLight: '#F59E0B',
+      gem: '#DC2626',
+      label: 'VIP 3',
+    };
+  } else if (tier === 'silver') {
+    tierColors = {
+      goldLight: '#FFFFFF',
+      goldMid: '#94A3B8',
+      goldDark: '#334155',
+      wingPurple: '#1E293B',
+      wingPurpleLight: '#38BDF8',
+      gem: '#06B6D4',
+      label: 'VIP 2',
+    };
+  } else if (tier === 'bronze') {
+    tierColors = {
+      goldLight: '#FED7AA',
+      goldMid: '#D97706',
       goldDark: '#78350F',
-      wingPurple: '#2E0854',
-      wingPurpleLight: '#C084FC',
-      gem: '#F43F5E',
-      label: 'VIP 5',
-    },
-  }[tier];
+      wingPurple: '#3E1C0A',
+      wingPurpleLight: '#EA580C',
+      gem: '#F97316',
+      label: 'VIP 1',
+    };
+  }
 
   return (
     <div
@@ -243,85 +316,193 @@ export const VIPMessageBubble: React.FC<VIPMessageBubbleProps> = ({
   const vipTier = sender.vipTier || 'none';
   const isVip = vipTier !== 'none' && sender.isVipActive !== false;
 
-  // Styling properties per tier
-  const bubbleStyles = {
-    mythic: {
-      containerBg: 'bg-gradient-to-r from-[#17064D] via-[#10033E] to-[#17064D]',
-      borderColor: 'border-2 border-amber-400',
-      borderGlow: 'shadow-[0_0_18px_rgba(250,204,21,0.5),inset_0_1px_2px_rgba(255,255,255,0.3)]',
-      textColor: 'text-amber-50',
-      pillBg: 'bg-[#0B0224] border border-amber-400 text-amber-300',
-      tierLabel: 'VIP 5',
-      crestTier: 'mythic' as VIPTier,
-    },
-    royal: {
-      containerBg: 'bg-gradient-to-r from-[#24063D] via-[#170329] to-[#24063D]',
-      borderColor: 'border-2 border-purple-400/90',
-      borderGlow: 'shadow-[0_0_14px_rgba(192,132,252,0.45),inset_0_1px_2px_rgba(255,255,255,0.2)]',
-      textColor: 'text-purple-50',
-      pillBg: 'bg-[#150226] border border-purple-400 text-purple-200',
-      tierLabel: 'VIP 4',
-      crestTier: 'royal' as VIPTier,
-    },
-    gold: {
-      containerBg: 'bg-gradient-to-r from-[#2E1C05] via-[#1B1002] to-[#2E1C05]',
-      borderColor: 'border-2 border-yellow-500',
-      borderGlow: 'shadow-[0_0_12px_rgba(234,179,8,0.4)]',
-      textColor: 'text-yellow-50',
-      pillBg: 'bg-[#170D02] border border-yellow-400 text-yellow-300',
-      tierLabel: 'VIP 3',
-      crestTier: 'gold' as VIPTier,
-    },
-    silver: {
-      containerBg: 'bg-gradient-to-r from-[#111827] via-[#0B0F19] to-[#111827]',
-      borderColor: 'border-2 border-slate-300/80',
-      borderGlow: 'shadow-[0_0_10px_rgba(203,213,225,0.3)]',
-      textColor: 'text-slate-100',
-      pillBg: 'bg-[#0B1120] border border-slate-300 text-slate-200',
-      tierLabel: 'VIP 2',
-      crestTier: 'silver' as VIPTier,
-    },
-    bronze: {
-      containerBg: 'bg-gradient-to-r from-[#291507] via-[#170B04] to-[#291507]',
-      borderColor: 'border-2 border-amber-600/80',
-      borderGlow: 'shadow-[0_0_8px_rgba(217,119,6,0.3)]',
-      textColor: 'text-amber-100',
-      pillBg: 'bg-[#150903] border border-amber-500 text-amber-300',
-      tierLabel: 'VIP 1',
-      crestTier: 'bronze' as VIPTier,
-    },
-    none: {
-      containerBg: isMe ? 'bg-[#241A0B]' : 'bg-[#161826]',
-      borderColor: isMe ? 'border border-amber-500/60' : 'border border-zinc-700/80',
+  const mythicFrame = getMythicFrameById(sender.mythicFrameId || DEFAULT_MYTHIC_FRAME_ID);
+
+  // Compute exact styles that match the user's selected frame
+  const getBubbleStyle = () => {
+    if (vipTier === 'mythic') {
+      switch (mythicFrame.id) {
+        case 'mythic_golden_falcon':
+          return {
+            containerBg: 'bg-gradient-to-r from-[#241505]/95 via-[#180E03]/95 to-[#241505]/95',
+            borderColor: 'border-2 border-amber-400/90',
+            borderGlow: 'shadow-[0_0_18px_rgba(245,158,11,0.4),inset_0_1px_2px_rgba(254,240,138,0.25)]',
+            textColor: 'text-amber-50',
+            pillBg: 'bg-[#1C0F02] border border-amber-400/80 text-amber-300',
+            tierLabel: 'VIP 5',
+            frameIcon: '🦅',
+            frameName: 'صقر الذهب',
+            crestTier: 'mythic' as VIPTier,
+            frameId: 'mythic_golden_falcon',
+          };
+        case 'mythic_fire_dragon':
+          return {
+            containerBg: 'bg-gradient-to-r from-[#2B0808]/95 via-[#190303]/95 to-[#2B0808]/95',
+            borderColor: 'border-2 border-red-500/90',
+            borderGlow: 'shadow-[0_0_18px_rgba(239,68,68,0.4),inset_0_1px_2px_rgba(251,191,36,0.25)]',
+            textColor: 'text-red-50',
+            pillBg: 'bg-[#200404] border border-red-400/80 text-red-200',
+            tierLabel: 'VIP 5',
+            frameIcon: '🐉',
+            frameName: 'تنين اللهب',
+            crestTier: 'mythic' as VIPTier,
+            frameId: 'mythic_fire_dragon',
+          };
+        case 'mythic_cosmic_nebula':
+          return {
+            containerBg: 'bg-gradient-to-r from-[#140C2E]/95 via-[#0A0E21]/95 to-[#140C2E]/95',
+            borderColor: 'border-2 border-cyan-400/90',
+            borderGlow: 'shadow-[0_0_18px_rgba(6,182,212,0.4),inset_0_1px_2px_rgba(139,92,246,0.25)]',
+            textColor: 'text-cyan-50',
+            pillBg: 'bg-[#0B0A20] border border-cyan-400/80 text-cyan-200',
+            tierLabel: 'VIP 5',
+            frameIcon: '🌌',
+            frameName: 'سديم النجوم',
+            crestTier: 'mythic' as VIPTier,
+            frameId: 'mythic_cosmic_nebula',
+          };
+        case 'mythic_ruby_ottoman':
+          return {
+            containerBg: 'bg-gradient-to-r from-[#2A060C]/95 via-[#170205]/95 to-[#2A060C]/95',
+            borderColor: 'border-2 border-rose-500/90',
+            borderGlow: 'shadow-[0_0_18px_rgba(225,29,72,0.4),inset_0_1px_2px_rgba(252,211,77,0.25)]',
+            textColor: 'text-rose-50',
+            pillBg: 'bg-[#1D0308] border border-rose-400/80 text-rose-200',
+            tierLabel: 'VIP 5',
+            frameIcon: '💎',
+            frameName: 'ياقوت السلطان',
+            crestTier: 'mythic' as VIPTier,
+            frameId: 'mythic_ruby_ottoman',
+          };
+        case 'mythic_cyber_glory':
+          return {
+            containerBg: 'bg-gradient-to-r from-[#042016]/95 via-[#02130D]/95 to-[#042016]/95',
+            borderColor: 'border-2 border-emerald-400/90',
+            borderGlow: 'shadow-[0_0_18px_rgba(16,185,129,0.4),inset_0_1px_2px_rgba(245,158,11,0.25)]',
+            textColor: 'text-emerald-50',
+            pillBg: 'bg-[#02150E] border border-emerald-400/80 text-emerald-200',
+            tierLabel: 'VIP 5',
+            frameIcon: '⚡',
+            frameName: 'شفق النيون',
+            crestTier: 'mythic' as VIPTier,
+            frameId: 'mythic_cyber_glory',
+          };
+        case 'mythic_sovereign_wings':
+        default:
+          return {
+            containerBg: 'bg-gradient-to-r from-[#210B38]/95 via-[#130524]/95 to-[#210B38]/95',
+            borderColor: 'border-2 border-amber-400/90',
+            borderGlow: 'shadow-[0_0_18px_rgba(251,191,36,0.4),inset_0_1px_2px_rgba(168,85,247,0.25)]',
+            textColor: 'text-purple-50',
+            pillBg: 'bg-[#130424] border border-amber-400/80 text-amber-200',
+            tierLabel: 'VIP 5',
+            frameIcon: '👑',
+            frameName: 'تاج السلطان',
+            crestTier: 'mythic' as VIPTier,
+            frameId: 'mythic_sovereign_wings',
+          };
+      }
+    }
+
+    if (vipTier === 'royal') {
+      return {
+        containerBg: 'bg-gradient-to-r from-[#220B38]/95 via-[#150524]/95 to-[#220B38]/95',
+        borderColor: 'border-2 border-purple-400/90',
+        borderGlow: 'shadow-[0_0_14px_rgba(192,132,252,0.4),inset_0_1px_2px_rgba(255,255,255,0.2)]',
+        textColor: 'text-purple-50',
+        pillBg: 'bg-[#150226] border border-purple-400 text-purple-200',
+        tierLabel: 'VIP 4',
+        frameIcon: '🦁',
+        frameName: 'ملكي',
+        crestTier: 'royal' as VIPTier,
+        frameId: undefined,
+      };
+    }
+
+    if (vipTier === 'gold') {
+      return {
+        containerBg: 'bg-gradient-to-r from-[#241505]/95 via-[#160D02]/95 to-[#241505]/95',
+        borderColor: 'border-2 border-yellow-400/90',
+        borderGlow: 'shadow-[0_0_14px_rgba(234,179,8,0.4)]',
+        textColor: 'text-yellow-50',
+        pillBg: 'bg-[#170D02] border border-yellow-400 text-yellow-300',
+        tierLabel: 'VIP 3',
+        frameIcon: '🦅',
+        frameName: 'ذهبي',
+        crestTier: 'gold' as VIPTier,
+        frameId: undefined,
+      };
+    }
+
+    if (vipTier === 'silver') {
+      return {
+        containerBg: 'bg-gradient-to-r from-[#111827]/95 via-[#0B0F19]/95 to-[#111827]/95',
+        borderColor: 'border-2 border-slate-300/80',
+        borderGlow: 'shadow-[0_0_12px_rgba(203,213,225,0.3)]',
+        textColor: 'text-slate-100',
+        pillBg: 'bg-[#0B1120] border border-slate-300 text-slate-200',
+        tierLabel: 'VIP 2',
+        frameIcon: '🐺',
+        frameName: 'فضي',
+        crestTier: 'silver' as VIPTier,
+        frameId: undefined,
+      };
+    }
+
+    if (vipTier === 'bronze') {
+      return {
+        containerBg: 'bg-gradient-to-r from-[#241306]/95 via-[#160B04]/95 to-[#241306]/95',
+        borderColor: 'border-2 border-amber-600/80',
+        borderGlow: 'shadow-[0_0_10px_rgba(217,119,6,0.3)]',
+        textColor: 'text-amber-100',
+        pillBg: 'bg-[#150903] border border-amber-500 text-amber-300',
+        tierLabel: 'VIP 1',
+        frameIcon: '🦅',
+        frameName: 'برونزي',
+        crestTier: 'bronze' as VIPTier,
+        frameId: undefined,
+      };
+    }
+
+    // Default / non-vip
+    return {
+      containerBg: isMe ? 'bg-[#1E1B2E]/90' : 'bg-[#151624]/90',
+      borderColor: isMe ? 'border border-amber-500/50' : 'border border-zinc-700/80',
       borderGlow: 'shadow-sm',
-      textColor: isMe ? 'text-amber-50' : 'text-zinc-100',
+      textColor: 'text-zinc-100',
       pillBg: '',
       tierLabel: '',
+      frameIcon: '',
+      frameName: '',
       crestTier: 'none' as VIPTier,
-    },
-  }[vipTier];
+      frameId: undefined,
+    };
+  };
 
-  // If user is not VIP, render clean modern bubble
+  const bubbleStyles = getBubbleStyle();
+
+  // If user is not VIP, render clean modern bubble with natural RTL alignment
   if (!isVip) {
     return (
-      <div className={`flex items-start gap-2.5 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+      <div className={`flex items-start gap-2.5 group my-1.5 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
         <div className="relative shrink-0">
           <AvatarWithFrame
             user={sender}
             size="xs"
             showCrown={false}
+            crownAnimated={false}
             onClick={() => onUserClick?.(sender)}
           />
         </div>
 
-        <div className={`flex-1 min-w-0 rounded-2xl p-3 border transition-colors ${bubbleStyles.containerBg} ${bubbleStyles.borderColor} ${isMe ? 'text-right' : ''}`}>
-          <div className={`flex items-center justify-between gap-1 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-            <div className="flex items-center gap-1.5 truncate">
+        <div className={`flex-1 min-w-0 rounded-2xl p-2.5 sm:px-3.5 sm:py-2.5 border transition-colors ${bubbleStyles.containerBg} ${bubbleStyles.borderColor}`}>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
               <VIPName user={sender} size="xs" showRoleTag={false} />
               {additionalRoleBadge}
               {isMe && <span className="text-[10px] text-amber-300/80 font-bold">(أنت)</span>}
             </div>
-            <span className={`text-[10px] font-mono shrink-0 ${isMe ? 'text-amber-200/80' : 'text-zinc-400'}`}>
+            <span className="text-[10px] font-mono shrink-0 text-zinc-400 bg-black/30 px-1.5 py-0.5 rounded">
               {timestamp}
             </span>
           </div>
@@ -333,14 +514,14 @@ export const VIPMessageBubble: React.FC<VIPMessageBubbleProps> = ({
     );
   }
 
-  // ROYAL LUXURY VIP CAPSULE MESSAGE BUBBLE (Exact match to IMG_3783.jpeg)
+  // ROYAL LUXURY VIP CAPSULE MESSAGE BUBBLE
   return (
     <div
       className={`flex items-start gap-2.5 group my-1.5 relative ${
         isMe ? 'flex-row-reverse' : 'flex-row'
       }`}
     >
-      {/* 1. Avatar with Master Royal Frame */}
+      {/* 1. Avatar with Frame - Crown is NOT shown in chat so no bobbing animation occurs */}
       <div
         className="relative shrink-0 cursor-pointer transition-transform hover:scale-105 duration-200"
         onClick={() => onUserClick?.(sender)}
@@ -348,55 +529,47 @@ export const VIPMessageBubble: React.FC<VIPMessageBubbleProps> = ({
         <AvatarWithFrame
           user={sender}
           size="xs"
-          showCrown={true}
+          showCrown={false}
+          crownAnimated={false}
         />
       </div>
 
-      {/* 2. Master Luxury Message Bubble Container */}
+      {/* 2. Master Luxury Message Bubble Container matching chosen frame */}
       <div
-        className={`flex-1 min-w-0 relative rounded-2xl sm:rounded-full p-2.5 sm:px-4 sm:py-2.5 transition-all duration-300 ${
+        className={`flex-1 min-w-0 relative rounded-2xl p-2.5 sm:px-4 sm:py-2.5 transition-all duration-300 ${
           bubbleStyles.containerBg
-        } ${bubbleStyles.borderColor} ${bubbleStyles.borderGlow} ${
-          isMe ? 'text-right' : 'text-left'
-        }`}
+        } ${bubbleStyles.borderColor} ${bubbleStyles.borderGlow}`}
       >
-        {/* Subtle Decorative Golden Corner Crown Filigree for High Tiers */}
-        {(vipTier === 'mythic' || vipTier === 'royal') && (
-          <div
-            className={`absolute -top-2 ${
-              isMe ? 'left-4' : 'right-4'
-            } pointer-events-none text-xs select-none filter drop-shadow-[0_0_6px_rgba(250,204,21,0.9)]`}
-          >
-            👑
-          </div>
-        )}
-
-        {/* Header Row: Winged Crest + Name + VIP Pill + Time */}
-        <div
-          className={`flex items-center justify-between gap-2 mb-1.5 ${
-            isMe ? 'flex-row-reverse' : 'flex-row'
-          }`}
-        >
-          {/* Left/Right Leading Winged Lion Crest & Name Group */}
-          <div className="flex items-center gap-2 truncate">
-            {/* Winged Lion Crest directly attached to the bubble as in IMG_3783.jpeg */}
-            <div className="relative shrink-0 -my-1">
-              <WingedLionCrest tier={bubbleStyles.crestTier} size={28} />
-            </div>
-
-            {/* Sender Name with VIP styling */}
+        {/* Header Row: Always Natural RTL order (Sender Name -> Role Badge -> Frame/VIP Pill -> Time) */}
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          {/* Right/Leading Group: Name + Verification + Role + VIP Level */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            {/* Sender Name with VIP styling & verification */}
             <VIPName user={sender} size="xs" showRoleTag={false} />
-
-            {/* The Distinct "VIP 5" / "VIP X" Luxury Pill Badge from IMG_3783.jpeg */}
-            <div
-              className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider shadow-sm flex items-center gap-1 shrink-0 ${bubbleStyles.pillBg}`}
-            >
-              <span className="text-[9px]">👑</span>
-              <span>{bubbleStyles.tierLabel}</span>
-            </div>
 
             {/* Additional Host/Owner/Mod Badge if applicable */}
             {additionalRoleBadge}
+
+            {/* Frame / VIP Pill Badge */}
+            {bubbleStyles.tierLabel && (
+              <div
+                className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide shadow-sm flex items-center gap-1 shrink-0 ${bubbleStyles.pillBg}`}
+              >
+                <span>{bubbleStyles.frameIcon}</span>
+                <span>{bubbleStyles.tierLabel}</span>
+              </div>
+            )}
+
+            {/* Mini Winged Lion Crest matching the user's chosen frame colors */}
+            {bubbleStyles.crestTier !== 'none' && (
+              <div className="relative shrink-0">
+                <WingedLionCrest
+                  tier={bubbleStyles.crestTier}
+                  frameId={bubbleStyles.frameId}
+                  size={22}
+                />
+              </div>
+            )}
 
             {isMe && (
               <span className="text-[10px] text-amber-300/80 font-bold shrink-0">
@@ -405,18 +578,18 @@ export const VIPMessageBubble: React.FC<VIPMessageBubbleProps> = ({
             )}
           </div>
 
-          {/* Message Timestamp */}
-          <span className="text-[10px] font-mono shrink-0 text-amber-200/70 font-semibold px-1.5 py-0.5 rounded-md bg-black/30">
+          {/* Timestamp - Left side of the bubble */}
+          <span className="text-[10px] font-mono shrink-0 text-zinc-300/80 font-medium px-1.5 py-0.5 rounded-md bg-black/40">
             {timestamp}
           </span>
         </div>
 
         {/* Message Content Text */}
-        <div className="relative z-10 px-1">
+        <div className="relative z-10 px-0.5">
           <p
             className={`text-[13px] sm:text-[14px] font-semibold break-words leading-relaxed select-text tracking-wide whitespace-pre-wrap ${
               bubbleStyles.textColor
-            } drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]`}
+            }`}
           >
             {content}
           </p>

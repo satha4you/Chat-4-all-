@@ -42,6 +42,7 @@ import {
 import { RoomModeratorsModal } from './RoomModeratorsModal';
 import { EditRoomModal } from './EditRoomModal';
 import { RoomVerifiedBadge } from '../common/RoomVerifiedBadge';
+import { VerifiedBadge } from '../common/VerifiedBadge';
 
 interface LiveVoiceRoomProps {
   room: VoiceRoom;
@@ -679,9 +680,16 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                   </button>
                 )}
               </div>
-              <div className="text-[10px] text-zinc-400 flex items-center gap-1 truncate mt-0.5">
+              <div className="text-[10px] text-zinc-400 flex items-center gap-1.5 truncate mt-0.5">
                 <span className="text-zinc-500 shrink-0">المضيف:</span>
                 <span className="truncate text-zinc-300 font-bold">{room.host.nickname}</span>
+                {room.host.verified && (
+                  <VerifiedBadge
+                    type={room.host.verificationType || (room.host.role === 'owner' ? 'gold' : 'blue')}
+                    size="xs"
+                    className="shrink-0"
+                  />
+                )}
                 {room.host.vipTier && (
                   <span className="text-[9px] text-amber-400 font-black shrink-0">👑 VIP</span>
                 )}
@@ -933,11 +941,11 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                     </div>
 
                     {/* Seat Label & Nickname - Formatted so Owner & Host never overlap */}
-                    <div className="mt-1 text-center w-full max-w-[84px] sm:max-w-[92px] px-0.5 flex flex-col items-center justify-center">
+                    <div className="mt-1 text-center w-full max-w-[96px] sm:max-w-[104px] px-0.5 flex flex-col items-center justify-center">
                       {isOccupied ? (
                         <>
-                          <div className="truncate max-w-full px-0.5">
-                            <VIPName user={seat.user!} size="xs" showCrown={false} showRoleTag={false} />
+                          <div className="w-full flex items-center justify-center px-0.5 overflow-hidden">
+                            <VIPName user={seat.user!} size="xs" showCrown={false} showRoleTag={false} className="max-w-full" />
                           </div>
                           {seat.user?.role === 'owner' && (seat.seatIndex === 0 || seat.user?.id === room.host.id) ? (
                             <span className="mt-0.5 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 via-yellow-400/20 to-amber-500/25 border border-amber-400/50 text-[9px] font-black text-amber-300 leading-tight whitespace-nowrap shadow-sm">

@@ -13,6 +13,7 @@ interface AvatarWithFrameProps {
   isSpeaking?: boolean;
   audioLevel?: number; // 0 to 100
   showCrown?: boolean;
+  crownAnimated?: boolean;
   showLevel?: boolean;
   level?: number;
   className?: string;
@@ -28,6 +29,7 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
   isSpeaking = false,
   audioLevel = 0,
   showCrown = true,
+  crownAnimated = true,
   showLevel = false,
   level,
   className = '',
@@ -159,7 +161,8 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
           <RealisticCrown
             tier={tier}
             size={sizeMap.crownSize}
-            animated={true}
+            animated={crownAnimated}
+            disableBobbing={!crownAnimated || size === 'xs' || size === 'sm'}
             isHovered={isHovered}
           />
         </div>

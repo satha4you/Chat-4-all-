@@ -6,6 +6,7 @@ interface RealisticCrownProps {
   tier?: VIPTier;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   animated?: boolean;
+  disableBobbing?: boolean;
   isHovered?: boolean;
   className?: string;
 }
@@ -24,6 +25,7 @@ export const RealisticCrown: React.FC<RealisticCrownProps> = ({
   tier = 'mythic',
   size = 'md',
   animated = true,
+  disableBobbing = false,
   isHovered: externalHovered,
   className = '',
 }) => {
@@ -133,7 +135,7 @@ export const RealisticCrown: React.FC<RealisticCrownProps> = ({
               rotateY: isHovered ? [-16, 16, -16] : [-10, 10, -10],
               rotateX: isHovered ? [6, -6, 6] : [3, -3, 3],
               rotateZ: [-1.5, 1.5, -1.5],
-              y: isHovered ? [-6, 6, -6] : [-3, 3, -3],
+              ...(disableBobbing ? { y: 0 } : { y: isHovered ? [-6, 6, -6] : [-3, 3, -3] }),
               scale: isHovered ? 1.16 : 1,
             }
           : undefined
@@ -144,7 +146,7 @@ export const RealisticCrown: React.FC<RealisticCrownProps> = ({
               rotateY: { repeat: Infinity, duration: 4.6, ease: 'easeInOut' },
               rotateX: { repeat: Infinity, duration: 4.6, ease: 'easeInOut' },
               rotateZ: { repeat: Infinity, duration: 4.6, ease: 'easeInOut' },
-              y: { repeat: Infinity, duration: 2.6, ease: 'easeInOut' },
+              ...(disableBobbing ? {} : { y: { repeat: Infinity, duration: 2.6, ease: 'easeInOut' } }),
               scale: { duration: 0.35, ease: 'easeOut' },
             }
           : undefined

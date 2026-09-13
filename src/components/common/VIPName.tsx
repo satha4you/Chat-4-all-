@@ -73,29 +73,30 @@ export const VIPName: React.FC<VIPNameProps> = ({
   };
 
   return (
-    <div className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>
-      <span className={`tracking-tight truncate ${sizeClasses} ${getTierColor()}`}>
+    <div className={`inline-flex items-center justify-center gap-1 flex-nowrap max-w-full align-middle ${className}`}>
+      <span className={`tracking-tight truncate shrink min-w-0 ${sizeClasses} ${getTierColor()}`}>
         {name}
       </span>
 
-      {showCrown && getCrownIcon()}
-
-      {/* Verified Account Badge (Gold or Blue) */}
+      {/* Verified Account Badge (Gold or Blue) - Placed directly beside the name */}
       {isVerified && (
         <VerifiedBadge
           type={effectiveVerificationType}
           size={size === 'xl' || size === 'lg' ? 'md' : size === 'md' ? 'sm' : 'xs'}
+          className="shrink-0"
         />
       )}
 
+      {showCrown && getCrownIcon()}
+
       {/* Role Tag (Owner / Admin) */}
       {showRoleTag && userRole === 'owner' && (
-        <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+        <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
           المالك
         </span>
       )}
       {showRoleTag && userRole === 'moderator' && (
-        <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+        <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 shrink-0">
           مشرف
         </span>
       )}
