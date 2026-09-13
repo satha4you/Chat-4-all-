@@ -1,8 +1,10 @@
 @import "tailwindcss";
 @font-face {
-@font-face {
   font-family: "LyonArabic";
-  src: url("/assets/fonts/lyon-arabic-display-medium.otf") format("opentype");
+  src: url("/assets/fonts/LyonArabic-TextBold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
   font-weight: 500;
   font-style: normal;
 }
