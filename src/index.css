@@ -5,10 +5,6 @@
   font-weight: 700;
   font-style: normal;
 }
-  font-weight: 500;
-  font-style: normal;
-}
-}
 @layer base {
   *, ::before, ::after {
 font-family: "LyonArabic", sans-serif;
