@@ -345,4 +345,12 @@ font-family: "AbdoLine", sans-serif;
 }
 
 
+@keyframes giftFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
 
+  50% {
+    transform: translateY(-6px) scale(1.03);
+  }
+}
