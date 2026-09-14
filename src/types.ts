@@ -187,6 +187,20 @@ export interface ModerationReport {
   createdAt: string;
 }
 
+export type PushNotificationColor = 'royal_gold' | 'emerald' | 'crimson' | 'sapphire' | 'violet';
+
+export interface PushNotification {
+  id: string;
+  title: string;
+  message: string;
+  colorScheme: PushNotificationColor;
+  timestamp: string;
+  senderName?: string;
+  senderRole?: string;
+  senderAvatar?: string;
+  durationSeconds?: number;
+}
+
 export interface SystemAnnouncement {
   id: string;
   titleAr: string;

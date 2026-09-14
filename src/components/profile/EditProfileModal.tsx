@@ -9,7 +9,7 @@ import { playSoundEffect } from '../../utils/soundEffects';
 import { getVIPTheme, ALL_VIP_THEMES } from '../../data/vipThemes';
 import { MYTHIC_FRAMES, DEFAULT_MYTHIC_FRAME_ID, getMythicFrameById } from '../../data/mythicFrames';
 import { compressImage } from '../../utils/storage';
-import { VIP_CONFIGS } from '../../data/initialData';
+import { VIP_CONFIGS, ARAB_COUNTRIES } from '../../data/initialData';
 
 interface EditProfileModalProps {
   user: UserProfile;
@@ -33,19 +33,6 @@ const SAMPLE_AVATARS = [
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=300&auto=format&fit=crop&q=80',
-];
-
-const ARAB_COUNTRIES = [
-  { code: 'SA', nameAr: 'المملكة العربية السعودية', flag: '🇸🇦' },
-  { code: 'AE', nameAr: 'الإمارات العربية المتحدة', flag: '🇦🇪' },
-  { code: 'KW', nameAr: 'الكويت', flag: '🇰🇼' },
-  { code: 'QA', nameAr: 'قطر', flag: '🇶🇦' },
-  { code: 'OM', nameAr: 'سلطنة عمان', flag: '🇴🇲' },
-  { code: 'BH', nameAr: 'البحرين', flag: '🇧🇭' },
-  { code: 'EG', nameAr: 'مصر', flag: '🇪🇬' },
-  { code: 'IQ', nameAr: 'العراق', flag: '🇮🇶' },
-  { code: 'JO', nameAr: 'الأردن', flag: '🇯🇴' },
-  { code: 'MA', nameAr: 'المغرب', flag: '🇲🇦' },
 ];
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({

@@ -11,6 +11,7 @@ import {
   Gift,
   RoomCategory,
   OwnerContactInfo,
+  PushNotification,
 } from './types';
 import {
   INITIAL_USERS,
@@ -42,6 +43,8 @@ import { AvatarWithFrame } from './components/common/AvatarWithFrame';
 import { VIPBadge } from './components/common/VIPBadge';
 import { VIPName } from './components/common/VIPName';
 import { GoldFallingParticles } from './components/common/GoldFallingParticles';
+import { PushNotificationToast } from './components/common/PushNotificationToast';
+import { playSoundEffect } from './utils/soundEffects';
 import { 
   Crown, 
   Mic, 
@@ -60,7 +63,6 @@ import {
   Users
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { playSoundEffect } from './utils/soundEffects';
 
 export default function App() {
   // Persistence states
@@ -192,10 +194,51 @@ export default function App() {
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
   const [inspectedUser, setInspectedUser] = useState<UserProfile | null>(null);
   const [targetDmUser, setTargetDmUser] = useState<UserProfile | null>(null);
+  const [activePushNotification, setActivePushNotification] = useState<PushNotification | null>(null);
   const [goldParticlesEnabled, setGoldParticlesEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('royal_gold_particles_enabled');
     return saved !== null ? saved === 'true' : true;
   });
+
+  // Real-time Push Notification synchronization across all tabs and clients in same session
+  useEffect(() => {
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        channel = new BroadcastChannel('royal_voice_push_notifications');
+        channel.onmessage = (event) => {
+          if (event.data && event.data.type === 'PUSH_NOTIFICATION') {
+            setActivePushNotification(event.data.notification);
+            playSoundEffect('bell');
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('BroadcastChannel error:', e);
+    }
+
+    // Also support storage event for cross-tab realtime sync
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'royal_voice_latest_push' && e.newValue) {
+        try {
+          const notif = JSON.parse(e.newValue);
+          setActivePushNotification(notif);
+          playSoundEffect('bell');
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      if (channel) {
+        channel.close();
+      }
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   // Sync with LocalStorage
   useEffect(() => {
@@ -396,6 +439,29 @@ export default function App() {
     setAnnouncements((prev) => [newAnn, ...prev]);
   };
 
+  const handleSendPushNotification = (notification: PushNotification) => {
+    // 1. Show immediately on current client/tab
+    setActivePushNotification(notification);
+
+    // 2. Broadcast to all open tabs/clients in real-time
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('royal_voice_push_notifications');
+        bc.postMessage({ type: 'PUSH_NOTIFICATION', notification });
+        bc.close();
+      }
+    } catch (e) {
+      console.warn('Broadcast error:', e);
+    }
+
+    // 3. Set in localStorage to trigger storage events across windows
+    try {
+      localStorage.setItem('royal_voice_latest_push', JSON.stringify(notification));
+    } catch (e) {
+      console.warn('LocalStorage error:', e);
+    }
+  };
+
   const handleUpdateContactInfo = (newInfo: Partial<OwnerContactInfo>) => {
     setContactInfo((prev) => {
       const updated = { ...prev, ...newInfo };
@@ -588,6 +654,13 @@ export default function App() {
               setUserToEdit(null);
             }}
           />
+
+          {/* Instant Push Notification Toast inside active room */}
+          <PushNotificationToast
+            notification={activePushNotification}
+            onDismiss={() => setActivePushNotification(null)}
+            isMobileShell={deviceMode === 'mobile_shell'}
+          />
         </div>
       </DeviceFrame>
     );
@@ -653,6 +726,7 @@ export default function App() {
               onApproveVipRequest={handleApproveVipRequest}
               onRejectVipRequest={handleRejectVipRequest}
               onAddAnnouncement={handleAddAnnouncement}
+              onSendPushNotification={handleSendPushNotification}
               onResolveReport={handleResolveReport}
               onCloseAdmin={() => setShowAdmin(false)}
             />
@@ -992,6 +1066,13 @@ export default function App() {
             }}
           />
         )}
+
+        {/* Instant Push Notification Toast for all active users */}
+        <PushNotificationToast
+          notification={activePushNotification}
+          onDismiss={() => setActivePushNotification(null)}
+          isMobileShell={deviceMode === 'mobile_shell'}
+        />
 
       </div>
     </DeviceFrame>

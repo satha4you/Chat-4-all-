@@ -9,6 +9,8 @@ import {
   UserBadge,
   VIPConfig,
   OwnerContactInfo,
+  PushNotification,
+  PushNotificationColor,
 } from '../../types';
 import {
   VIP_CONFIGS,
@@ -84,6 +86,7 @@ interface AdminDashboardProps {
   onApproveVipRequest: (request: VIPSubscriptionRequest, durationMonths: number, tier: VIPTier) => void;
   onRejectVipRequest: (requestId: string, reason?: string) => void;
   onAddAnnouncement: (announcement: SystemAnnouncement) => void;
+  onSendPushNotification?: (notification: PushNotification) => void;
   onResolveReport: (reportId: string, action: 'ban_user' | 'dismiss') => void;
   onDeleteUser?: (userId: string) => void;
   onBanUser?: (userId: string, isBanned: boolean) => void;
@@ -105,6 +108,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onApproveVipRequest,
   onRejectVipRequest,
   onAddAnnouncement,
+  onSendPushNotification,
   onResolveReport,
   onDeleteUser,
   onBanUser,
@@ -165,10 +169,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editCustomAvatarUrl, setEditCustomAvatarUrl] = useState<string>('');
   const userEditFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Broadcast state
+  // Broadcast & Instant Push Notification state
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastContent, setBroadcastContent] = useState('');
   const [broadcastType, setBroadcastType] = useState<'info' | 'vip_promo' | 'system_update'>('vip_promo');
+  const [pushColorScheme, setPushColorScheme] = useState<PushNotificationColor>('royal_gold');
+  const [pushDuration, setPushDuration] = useState<number>(8);
+  const [sendAsPushToast, setSendAsPushToast] = useState<boolean>(true);
+  const [pushSentSuccess, setPushSentSuccess] = useState<boolean>(false);
 
   // Contact settings state
   const [ownerWhatsApp, setOwnerWhatsApp] = useState(contactInfo.whatsappNumber || OWNER_CONTACT_INFO.whatsappNumber);
@@ -324,15 +332,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
 
     onAddAnnouncement(newAnnouncement);
+
+    // If instant push notification is enabled (default true)
+    if (sendAsPushToast && onSendPushNotification) {
+      const newPush: PushNotification = {
+        id: 'push_' + Date.now(),
+        title: broadcastTitle.trim(),
+        message: broadcastContent.trim(),
+        colorScheme: pushColorScheme,
+        timestamp: new Date().toISOString(),
+        senderName: currentUser.nickname || currentUser.username || 'المالك والأدمن العام',
+        senderRole: 'المالك 👑',
+        senderAvatar: currentUser.avatar,
+        durationSeconds: pushDuration,
+      };
+      onSendPushNotification(newPush);
+    }
+
     playSoundEffect('bell');
     confetti({
-      particleCount: 50,
-      spread: 60,
+      particleCount: 70,
+      spread: 70,
       origin: { y: 0.3 }
     });
+
+    setPushSentSuccess(true);
+    setTimeout(() => setPushSentSuccess(false), 5000);
+
     setBroadcastTitle('');
     setBroadcastContent('');
-    alert('تم إرسال الإشعار لجميع مستخدمي المنصة بنجاح!');
   };
 
   return (
@@ -1268,72 +1296,194 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 5: Broadcast Announcements */}
+      {/* TAB 5: Broadcast Announcements & Realtime Instant Push Notification */}
       {activeTab === 'broadcast' && (
-        <div className="max-w-2xl mx-auto p-6 rounded-3xl bg-zinc-900/80 border border-zinc-800 space-y-4">
-          <div className="flex items-center gap-2 text-amber-400 font-bold">
-            <Bell className="w-5 h-5" />
-            <h3>إرسال إشعار وتنبيه لجميع مستخدمي المنصة</h3>
+        <div className="max-w-3xl mx-auto p-6 rounded-3xl bg-zinc-900/90 border border-zinc-800 space-y-6 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+            <div className="flex items-center gap-2.5 text-amber-400 font-bold">
+              <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30">
+                <Bell className="w-5 h-5 text-amber-400 animate-wiggle" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">
+                  إرسال إشعار فوري لجميع المتصلين (Push Notification)
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  تنبيه مباشر يظهر أعلى شاشة جميع المستخدمين المتصلين في نفس اللحظة مع مؤثر صوتي وتدرج لوني فخم.
+                </p>
+              </div>
+            </div>
+            <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black border border-amber-500/40">
+              صلاحية المالك الملكي 👑
+            </span>
           </div>
-          <p className="text-xs text-zinc-400">
-            سيظهر الإشعار لجميع الأعضاء والـ VIP في صفحة الإشعارات وبانرات التنبيهات الملكية.
-          </p>
 
-          <form onSubmit={handleSendBroadcast} className="space-y-4">
+          {pushSentSuccess && (
+            <div className="p-4 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500/60 text-emerald-200 text-xs sm:text-sm font-bold flex items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>تم بث الإشعار بنجاح! ظهر الآن كرسالة منبثقة ملونة في أعلى الشاشة لجميع المستخدمين المتصلين.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPushSentSuccess(false)}
+                className="text-emerald-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <form onSubmit={handleSendBroadcast} className="space-y-5">
+            {/* Color Scheme Selection for Push Toast */}
             <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">نوع الإشعار:</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block text-xs font-black text-zinc-300 mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>لون وتصميم الإشعار المنبثق أعلى الشاشة:</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                 {[
-                  { id: 'vip_promo', label: 'ترقية وعروض VIP 👑' },
-                  { id: 'info', label: 'تنبيه إداري عام 📢' },
-                  { id: 'system_update', label: 'تحديث منصة ⚡' },
-                ].map((t) => (
+                  { id: 'royal_gold', label: 'ذهب ملكي', border: 'border-amber-400', bg: 'bg-amber-500/20 text-amber-300', dot: 'bg-amber-400' },
+                  { id: 'emerald', label: 'زمرد فاخر', border: 'border-emerald-400', bg: 'bg-emerald-500/20 text-emerald-300', dot: 'bg-emerald-400' },
+                  { id: 'crimson', label: 'ياقوت أحمر', border: 'border-rose-400', bg: 'bg-rose-500/20 text-rose-300', dot: 'bg-rose-400' },
+                  { id: 'sapphire', label: 'أزرق ياقوتي', border: 'border-sky-400', bg: 'bg-sky-500/20 text-sky-300', dot: 'bg-sky-400' },
+                  { id: 'violet', label: 'بنفسجي إمبراطوري', border: 'border-purple-400', bg: 'bg-purple-500/20 text-purple-300', dot: 'bg-purple-400' },
+                ].map((c) => (
                   <button
-                    key={t.id}
+                    key={c.id}
                     type="button"
-                    onClick={() => setBroadcastType(t.id as any)}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
-                      broadcastType === t.id
-                        ? 'border-amber-400 bg-amber-500 text-black font-black'
-                        : 'border-zinc-800 bg-zinc-950 text-zinc-400'
+                    onClick={() => setPushColorScheme(c.id as PushNotificationColor)}
+                    className={`p-2.5 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      pushColorScheme === c.id
+                        ? `${c.border} ${c.bg} ring-2 ring-amber-400/50 scale-[1.03] shadow-md`
+                        : 'border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-700'
                     }`}
                   >
-                    {t.label}
+                    <span className={`w-2.5 h-2.5 rounded-full ${c.dot} shrink-0`} />
+                    <span>{c.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* Notification Category & Duration */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5">نوع التصنيف:</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'vip_promo', label: 'عروض VIP 👑' },
+                    { id: 'info', label: 'تنبيه إداري 📢' },
+                    { id: 'system_update', label: 'تحديث منصة ⚡' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setBroadcastType(t.id as any)}
+                      className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all truncate text-center ${
+                        broadcastType === t.id
+                          ? 'border-amber-400 bg-amber-500 text-black font-black'
+                          : 'border-zinc-800 bg-zinc-950 text-zinc-400'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                  مدة بقاء الإشعار المنبثق في أعلى الشاشة:
+                </label>
+                <select
+                  value={pushDuration}
+                  onChange={(e) => setPushDuration(Number(e.target.value))}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-500"
+                >
+                  <option value={5}>5 ثوانٍ (سريع)</option>
+                  <option value={8}>8 ثوانٍ (متوسط موصى به)</option>
+                  <option value={12}>12 ثانية (طويل وهام)</option>
+                  <option value={18}>18 ثانية (إعلان إداري مطول)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Notification Title */}
             <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">عنوان الإشعار:</label>
+              <label className="block text-xs font-bold text-zinc-300 mb-1">
+                عنوان الإشعار (يظهر بالخط العريض أعلى الشاشة):
+              </label>
               <input
                 type="text"
                 required
                 value={broadcastTitle}
                 onChange={(e) => setBroadcastTitle(e.target.value)}
-                placeholder="مثال: خصومات حصرية على باقات VIP الملكية هذا الأسبوع"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500"
+                placeholder="مثال: تنبيه هام من المالك لجميع أعضاء ديوان الصوت 👑"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 font-bold"
               />
             </div>
 
+            {/* Notification Message */}
             <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1">نص الرسالة:</label>
+              <label className="block text-xs font-bold text-zinc-300 mb-1">
+                نص الرسالة المنبثقة:
+              </label>
               <textarea
-                rows={4}
+                rows={3}
                 required
                 value={broadcastContent}
                 onChange={(e) => setBroadcastContent(e.target.value)}
-                placeholder="اكتب تفاصيل التنبيه هنا..."
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 resize-none"
+                placeholder="مثال: نرحب بجميع الأعضاء الجدد، تم فتح مسابقة الغرف الصوتية وتوزيع جوائز VIP الليلة في تمام الساعة 9 مساءً!"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
               />
             </div>
 
+            {/* Live Preview of Push Notification */}
+            <div className="p-4 rounded-2xl bg-black/60 border border-zinc-800 space-y-2">
+              <div className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>معاينة الإشعار المنبثق كما سيظهر فورًا للمستخدمين:</span>
+              </div>
+
+              <div
+                className={`p-3.5 rounded-xl border flex items-start gap-3 bg-gradient-to-r ${
+                  pushColorScheme === 'royal_gold'
+                    ? 'from-[#2A1B04] to-[#120B02] border-amber-400/60 text-amber-200 shadow-lg shadow-amber-500/10'
+                    : pushColorScheme === 'emerald'
+                    ? 'from-[#032314] to-[#010E08] border-emerald-400/60 text-emerald-200 shadow-lg shadow-emerald-500/10'
+                    : pushColorScheme === 'crimson'
+                    ? 'from-[#29050A] to-[#110104] border-rose-500/60 text-rose-200 shadow-lg shadow-rose-500/10'
+                    : pushColorScheme === 'sapphire'
+                    ? 'from-[#04162E] to-[#010914] border-sky-400/60 text-sky-200 shadow-lg shadow-sky-500/10'
+                    : 'from-[#20052B] to-[#0D0112] border-purple-400/60 text-purple-200 shadow-lg shadow-purple-500/10'
+                }`}
+              >
+                <div className="p-2 rounded-lg bg-amber-500 text-black font-black shrink-0">
+                  <Crown className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-0.5">
+                    <span className="font-bold text-amber-300">تنبيه فوري من المالك • {currentUser.nickname || 'المالك'}</span>
+                    <span>الآن</span>
+                  </div>
+                  <h4 className="text-xs font-black text-white">
+                    {broadcastTitle.trim() || 'عنوان الإشعار المنبثق...'}
+                  </h4>
+                  <p className="text-[11px] text-zinc-300 mt-0.5 line-clamp-2">
+                    {broadcastContent.trim() || 'تفاصيل نص التنبيه الفوري للمستخدمين...'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black font-black text-xs shadow-lg flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 text-black font-black text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-98 cursor-pointer"
             >
-              <Send className="w-4 h-4" />
-              <span>إرسال البث لجميع المستخدمين</span>
+              <Send className="w-4 h-4 text-black stroke-[2.5]" />
+              <span>إرسال الإشعار المنبثق لجميع المستخدمين المتصلين الآن 🚀</span>
             </button>
           </form>
         </div>
