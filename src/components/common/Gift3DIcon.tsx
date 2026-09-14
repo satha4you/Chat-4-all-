@@ -52,7 +52,10 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
   };
 
 
-  const imageName = giftImages[giftId];
+const imageName =
+  giftImages[giftId] ||
+  giftImages[`gift_${giftId}`] ||
+  giftId;
 
 
   return (
