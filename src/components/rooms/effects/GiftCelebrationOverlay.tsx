@@ -220,24 +220,12 @@ export const GiftCelebrationOverlay: React.FC<GiftCelebrationOverlayProps> = ({
             </div>
           </div>
 
-          {/* Huge Animated Gift Icon in Center */}
-          <div className="relative z-10 my-3 flex flex-col items-center justify-center">
-            <div className="relative">
-              {/* Outer Pulsing Glow */}
-              <div
-                className="absolute inset-0 rounded-full blur-xl opacity-60 animate-ping"
-                style={{ backgroundColor: config.colors[0] }}
-              />
-              
-              {/* Large Gift Icon */}
-<div className="relative w-32 h-32 md:w-40 md:h-40 transform hover:scale-110 transition-transform duration-300 animate-bounce">
-  <img
-    src={gift.icon}
-    alt={gift.nameAr}
-    className="w-full h-full object-contain drop-shadow-2xl"
-  />
+          {/* Gift Icon */}
+<div className="relative z-10 my-3 flex justify-center">
+  <div className="text-7xl animate-bounce">
+    {gift.icon}
+  </div>
 </div>
-
               
             {/* Gift Title & Value */}
             <h3 className="text-lg md:text-xl font-black text-white mt-3 tracking-wide drop-shadow-md">
