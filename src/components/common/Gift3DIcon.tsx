@@ -23,9 +23,9 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
   const currentSize = sizeMap[size] || sizeMap.md;
 
 
-  // ربط معرف الهدية باسم الصورة
   const giftImages: Record<string, string> = {
 
+    // الهدايا الأساسية
     gift_supercar: 'car.png',
     gift_castle: 'castle.png',
     gift_heart: 'heart.png',
@@ -49,6 +49,15 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
     gift_golden_throne: 'the-throne.png',
     gift_perfume: 'musk.png',
 
+
+    // هدايا إضافية
+    gift_dragon: 'dragon.png',
+    gift_horse: 'horse.png',
+    gift_falcon: 'falcon.png',
+    gift_phoenix: 'phoenix.png',
+    gift_meteor: 'meteor.png',
+    gift_emerald_bouquet: 'emerald-bouquet.png',
+
   };
 
 
@@ -58,8 +67,8 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
   return (
     <div
       className={`
-        relative inline-flex 
-        items-center justify-center 
+        relative inline-flex
+        items-center justify-center
         shrink-0 select-none
         ${currentSize}
         ${className}
@@ -69,14 +78,14 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
       }}
     >
 
-      {/* قاعدة الظل والإضاءة 3D */}
+      {/* إضاءة وظل ثلاثي الأبعاد */}
       <div
         className="
-          absolute inset-0 
+          absolute inset-0
           rounded-2xl
-          bg-gradient-to-br 
-          from-white/20 
-          via-transparent 
+          bg-gradient-to-br
+          from-white/20
+          via-transparent
           to-black/40
           pointer-events-none
         "
@@ -88,6 +97,7 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
         <img
           src={`/assets/gifts/${imageName}`}
           alt={giftId}
+          loading="lazy"
           className="
             relative
             w-full
@@ -96,6 +106,9 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
             drop-shadow-[0_6px_15px_rgba(255,215,0,0.45)]
             animate-[giftFloat_3s_ease-in-out_infinite]
           "
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
         />
 
       ) : (
