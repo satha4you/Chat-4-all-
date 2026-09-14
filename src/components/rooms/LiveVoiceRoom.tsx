@@ -1325,9 +1325,13 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                           {gift.rarity === 'legendary' ? '👑 أسطوري' : gift.rarity === 'epic' ? '🌟 ملحمي' : gift.rarity === 'rare' ? '💎 نادر' : '✨ مميز'}
                         </span>
 
-                        {/* Gift Icon */}
-                       <div className="text-5xl group-hover:scale-125 transition-transform duration-200 drop-shadow">
-  {gift.icon}
+ {/* Gift Image */}
+<div className="w-16 h-16 group-hover:scale-125 transition-transform duration-200 drop-shadow flex items-center justify-center">
+  <img
+    src={gift.image}
+    alt={gift.nameAr}
+    className="w-full h-full object-contain"
+  />
 </div>
 
                         {/* Gift Name */}
