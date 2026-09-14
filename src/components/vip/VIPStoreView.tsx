@@ -201,20 +201,27 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
           </div>
 
           {/* Current user VIP status card */}
-          <div className="bg-[#050505] border border-zinc-800 backdrop-blur-md rounded-2xl p-4 w-full md:w-auto min-w-[260px] text-right shrink-0">
-            <div className="text-xs text-zinc-400 mb-1">عضويتك الحالية:</div>
-            <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="bg-[#08080A]/95 border border-amber-500/30 backdrop-blur-md rounded-2xl p-4 sm:p-5 w-full md:w-auto md:min-w-[320px] text-right shrink-0 shadow-xl">
+            <div className="flex items-center justify-between text-xs text-zinc-400 mb-2 border-b border-zinc-800/80 pb-1.5">
+              <span className="font-bold">عضويتك الحالية في المنصة</span>
+              <span className="text-[10px] text-amber-400 font-mono">حساب معتمد</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
               <VIPName user={currentUser} size="md" />
-              <VIPBadge tier={currentUser.vipTier} size="sm" />
+              <VIPBadge tier={currentUser.vipTier} size="sm" shortText={true} />
             </div>
             {currentUser.isVipActive && currentUser.vipExpiresAt ? (
-              <div className="text-[11px] text-amber-300/90 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                <span>ينتهي في: {new Date(currentUser.vipExpiresAt).toLocaleDateString('ar-SA')}</span>
+              <div className="text-[11px] text-amber-300/90 flex items-center gap-1.5 bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20">
+                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>مفعلة حتى: {new Date(currentUser.vipExpiresAt).toLocaleDateString('ar-SA')}</span>
               </div>
             ) : (
-              <div className="text-[11px] text-zinc-500">
-                عضوية عامة - يمكنك الترقية الآن
+              <div className="text-[11px] text-zinc-400 flex items-center justify-between bg-zinc-900/80 px-2.5 py-1.5 rounded-xl border border-zinc-800">
+                <span className="flex items-center gap-1 text-zinc-300">
+                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>عضوية عادية (غير مفعلة)</span>
+                </span>
+                <span className="text-amber-400 text-[10px] font-bold">تتطلب تفعيل المالك</span>
               </div>
             )}
           </div>
@@ -222,37 +229,37 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
       </div>
 
       {/* Direct Contact to Owner Banner (Strict Manual Subscription Notice) */}
-      <div className="p-5 rounded-3xl bg-[#0A0A0A] border border-zinc-800 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 text-right">
-          <div className="p-3 rounded-2xl bg-amber-500 text-black shrink-0 font-black">
+      <div className="p-5 sm:p-6 rounded-3xl bg-[#0A0A0E] border border-amber-500/30 shadow-xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5">
+        <div className="flex items-start sm:items-center gap-3.5 text-right flex-1">
+          <div className="p-3 rounded-2xl bg-amber-500 text-black shrink-0 font-black shadow-lg shadow-amber-500/20">
             <MessageCircle className="w-6 h-6" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3 className="text-base font-bold text-amber-300">
                 طريقة الاشتراك والتفعيل اليدوي المباشر
               </h3>
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
                 المالك والأدمن العام
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+            <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
               {contactInfo.customInstructionsAr || OWNER_CONTACT_INFO.customInstructionsAr}
             </p>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-300 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <span className="text-zinc-500">البريد الرسمي:</span>
+            <div className="flex items-center gap-3 mt-2 text-xs text-zinc-300 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-zinc-900/90 px-2.5 py-1 rounded-lg border border-zinc-800">
+                <span className="text-zinc-500">البريد:</span>
                 <span className="font-mono text-amber-400 font-bold">{contactInfo.email || OWNER_CONTACT_INFO.email}</span>
               </div>
               {contactInfo.whatsappNumber && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-zinc-500">• واتساب:</span>
+                <div className="flex items-center gap-1.5 bg-zinc-900/90 px-2.5 py-1 rounded-lg border border-zinc-800">
+                  <span className="text-zinc-500">واتساب:</span>
                   <span className="font-mono text-emerald-400 dir-ltr">{contactInfo.whatsappNumber}</span>
                 </div>
               )}
               {contactInfo.telegramHandle && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-zinc-500">• تيليجرام:</span>
+                <div className="flex items-center gap-1.5 bg-zinc-900/90 px-2.5 py-1 rounded-lg border border-zinc-800">
+                  <span className="text-zinc-500">تيليجرام:</span>
                   <span className="font-mono text-sky-400 dir-ltr">{contactInfo.telegramHandle}</span>
                 </div>
               )}
@@ -260,55 +267,63 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 w-full md:w-auto flex-wrap">
-          {isOwner && onEditContactInfo && (
+        {/* Symmetrical Balanced Action Grid */}
+        <div className="w-full lg:w-auto shrink-0 flex flex-col gap-2.5">
+          {/* Primary Row: 2 equal-width prominent buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
             <button
               type="button"
-              onClick={onEditContactInfo}
-              className="flex-1 md:flex-none px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
-              title="تعديل معلومات التواصل الرسمية في المنصة"
+              onClick={() => setShowRequestModal(true)}
+              className="h-11 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 text-black text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-98 cursor-pointer"
             >
-              <Edit className="w-4 h-4 text-black" />
-              <span>تعديل التواصل ✏️</span>
+              <Send className="w-4 h-4 text-black stroke-[2.5]" />
+              <span>إرسال طلب ترقية للمالك</span>
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={onOpenDirectContact}
-            className="flex-1 md:flex-none px-3.5 py-2.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-500/40 text-xs font-black flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
-          >
-            <Crown className="w-4 h-4 text-amber-400" />
-            <span>ملف تواصل المالك</span>
-          </button>
+            {(contactInfo.whatsappLink || contactInfo.whatsappNumber) && (
+              <a
+                href={contactInfo.whatsappLink || `https://wa.me/${contactInfo.whatsappNumber.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-11 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-98"
+              >
+                <MessageCircle className="w-4 h-4 text-white" />
+                <span>واتساب المالك المباشر</span>
+              </a>
+            )}
+          </div>
 
-          <a
-            href={`mailto:${contactInfo.email || OWNER_CONTACT_INFO.email}?subject=طلب ترقية VIP ديوان الصوت`}
-            className="flex-1 md:flex-none px-3.5 py-2.5 rounded-xl bg-[#141414] hover:bg-[#1E1E1E] text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
-          >
-            <Mail className="w-4 h-4 text-amber-400" />
-            <span>راسل المالك</span>
-          </a>
-
-          {(contactInfo.whatsappLink || contactInfo.whatsappNumber) && (
-            <a
-              href={contactInfo.whatsappLink || `https://wa.me/${contactInfo.whatsappNumber.replace(/[^0-9]/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-md transition-transform hover:scale-105"
+          {/* Secondary Row: Balanced supportive actions */}
+          <div className="flex items-center gap-2 w-full">
+            <button
+              type="button"
+              onClick={onOpenDirectContact}
+              className="flex-1 h-10 px-3 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-98 cursor-pointer"
             >
-              <MessageCircle className="w-4 h-4" />
-              <span>واتساب المالك</span>
-            </a>
-          )}
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span>ملف تواصل المالك</span>
+            </button>
 
-          <button
-            onClick={() => setShowRequestModal(true)}
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-105"
-          >
-            <Send className="w-4 h-4" />
-            <span>إرسال طلب ترقية للمالك</span>
-          </button>
+            <a
+              href={`mailto:${contactInfo.email || OWNER_CONTACT_INFO.email}?subject=طلب ترقية VIP ديوان الصوت`}
+              className="flex-1 h-10 px-3 rounded-xl bg-[#141416] hover:bg-[#1E1E22] text-zinc-200 border border-zinc-700/80 text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-98"
+            >
+              <Mail className="w-3.5 h-3.5 text-amber-400" />
+              <span>راسل بالبريد</span>
+            </a>
+
+            {isOwner && onEditContactInfo && (
+              <button
+                type="button"
+                onClick={onEditContactInfo}
+                className="flex-1 h-10 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-98 cursor-pointer"
+                title="تعديل معلومات التواصل الرسمية في المنصة"
+              >
+                <Edit className="w-3.5 h-3.5 text-amber-400" />
+                <span>تعديل التواصل</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, VIPTier, VIPThemeColorKey } from '../../types';
-import { X, Check, Camera, Sparkles, Upload, Image as ImageIcon, RotateCcw, Crown, Palette, Lock } from 'lucide-react';
+import { X, Check, Camera, Sparkles, Upload, Image as ImageIcon, RotateCcw, Crown, Palette, Lock, AlertCircle, ShieldAlert, Phone } from 'lucide-react';
 import { VIPName } from '../common/VIPName';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { RealisticCrown } from '../common/RealisticCrown';
@@ -8,12 +8,16 @@ import { RealisticTierEmblem } from '../common/RealisticTierEmblem';
 import { playSoundEffect } from '../../utils/soundEffects';
 import { getVIPTheme, ALL_VIP_THEMES } from '../../data/vipThemes';
 import { MYTHIC_FRAMES, DEFAULT_MYTHIC_FRAME_ID, getMythicFrameById } from '../../data/mythicFrames';
+import { compressImage } from '../../utils/storage';
+import { VIP_CONFIGS } from '../../data/initialData';
 
 interface EditProfileModalProps {
   user: UserProfile;
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedData: Partial<UserProfile>) => void;
+  onOpenOwnerContact?: () => void;
+  onOpenVipStore?: () => void;
 }
 
 const SAMPLE_AVATARS = [
@@ -49,7 +53,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onOpenOwnerContact,
+  onOpenVipStore,
 }) => {
+  const isOwner = user.role === 'owner' || user.id === 'user_owner';
+  const isVipActive = user.vipTier !== 'none' && (user.isVipActive ?? true);
+  const hasApprovedVip = isOwner || isVipActive;
+
   const [username, setUsername] = useState(user.username || '');
   const [nickname, setNickname] = useState(user.nickname || '');
   const [bio, setBio] = useState(user.bio || '');
@@ -61,6 +71,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [themeColor, setThemeColor] = useState<VIPThemeColorKey>(user.themeColor || 'royal_gold');
   const [mythicFrameId, setMythicFrameId] = useState<string>(user.mythicFrameId || DEFAULT_MYTHIC_FRAME_ID);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [vipNotice, setVipNotice] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -77,74 +88,34 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setThemeColor(user.themeColor || 'royal_gold');
       setMythicFrameId(user.mythicFrameId || DEFAULT_MYTHIC_FRAME_ID);
       setUploadError(null);
+      setVipNotice(null);
     }
   }, [user, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     setUploadError(null);
     if (!file.type.startsWith('image/')) {
       setUploadError('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('حجم الصورة كبير جدًا. الحد الأقصى 10 ميجابايت');
+    if (file.size > 12 * 1024 * 1024) {
+      setUploadError('حجم الصورة كبير جدًا. الحد الأقصى 12 ميجابايت');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (!result) return;
-
-      // Compress and optimize image using Canvas
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const maxDim = 320;
-          let width = img.width;
-          let height = img.height;
-          if (width > height) {
-            if (width > maxDim) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            }
-          } else {
-            if (height > maxDim) {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const optimized = canvas.toDataURL('image/jpeg', 0.85);
-            setCurrentAvatar(optimized);
-            setCustomAvatarUrl('');
-          } else {
-            setCurrentAvatar(result);
-            setCustomAvatarUrl('');
-          }
-        } catch {
-          setCurrentAvatar(result);
-          setCustomAvatarUrl('');
-        }
-      };
-      img.onerror = () => {
-        setUploadError('حدث خطأ أثناء تحميل الصورة');
-      };
-      img.src = result;
-    };
-    reader.onerror = () => {
-      setUploadError('حدث خطأ أثناء قراءة ملف الصورة');
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress to lightweight 180x180 JPEG (~15KB) to guarantee smooth, permanent localStorage persistence
+      const compressed = await compressImage(file, 200, 0.75);
+      setCurrentAvatar(compressed);
+      setCustomAvatarUrl('');
+      playSoundEffect('bell');
+    } catch (err) {
+      console.error('Image compression error:', err);
+      setUploadError('حدث خطأ أثناء معالجة وضغط الصورة');
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -164,15 +135,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     // Trigger celebratory sound effect
     playSoundEffect('gift_sparkle');
 
+    // Strict VIP security:
+    // New / unapproved users cannot self-grant VIP tiers or mythic frames.
+    // Only the owner can change VIP tier, or users keep their approved tier.
+    const effectiveVipTier: VIPTier = isOwner ? vipTier : (user.vipTier || 'none');
+    const effectiveThemeColor = (isOwner || hasApprovedVip) && effectiveVipTier !== 'none' ? themeColor : undefined;
+    const effectiveMythicFrameId = (isOwner || (hasApprovedVip && effectiveVipTier === 'mythic')) ? mythicFrameId : undefined;
+
     onSave({
       username: cleanUsername,
       nickname: finalNickname,
       bio: bio.trim(),
       status: status.trim() || 'متواجد دائمًا في الغرف الصوتية ✨',
       avatar: customAvatarUrl.trim() || currentAvatar,
-      vipTier: vipTier,
-      themeColor: vipTier !== 'none' ? themeColor : undefined,
-      mythicFrameId: vipTier === 'mythic' ? mythicFrameId : undefined,
+      vipTier: effectiveVipTier,
+      themeColor: effectiveThemeColor,
+      mythicFrameId: effectiveMythicFrameId,
       country: {
         code: countryObj.code,
         nameAr: countryObj.nameAr,
@@ -369,6 +347,70 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </div>
           </div>
 
+          {/* VIP Notice Toast/Alert if user tries to click locked tiers */}
+          {vipNotice && (
+            <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-between gap-2 text-xs text-amber-200 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>{vipNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVipNotice(null)}
+                className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-400"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Locked VIP Notice for New / Regular Users */}
+          {!hasApprovedVip && (
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1C1206] via-[#140C04] to-[#0A0502] border border-amber-500/40 space-y-3 shadow-xl">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-amber-300">
+                    باقات VIP والإطارات الملكية مغلقة للمستخدمين الجدد 🔒
+                  </h4>
+                  <p className="text-[11px] text-zinc-300 leading-relaxed mt-1">
+                    خصائص وتيجان وإطارات VIP مغلقة ومحمية للمستخدمين الجدد. لا يمكن تفعيل العضوية تلقائيًا، بل تتطلب موافقة وتفعيل يدوي من قبل المالك. يرجى التواصل مع المالك لاعتماد اشتراكك.
+                  </p>
+                </div>
+              </div>
+
+              {(onOpenOwnerContact || onOpenVipStore) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenOwnerContact) onOpenOwnerContact();
+                    else if (onOpenVipStore) onOpenVipStore();
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 text-black text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.01] active:scale-98"
+                >
+                  <Crown className="w-4 h-4 text-black stroke-[2.5]" />
+                  <span>تواصل مع المالك لتفعيل رتبة VIP والإطارات 👑</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Approved VIP Badge Indicator for activated users */}
+          {hasApprovedVip && !isOwner && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-amber-300 font-bold">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span>رتبتك المعتمدة حاليًا: {VIP_CONFIGS[user.vipTier]?.nameAr || 'VIP'} ✓</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                مفعلة رسميًا من المالك
+              </span>
+            </div>
+          )}
+
           {/* VIP Rank / Crown Tier Selection */}
           <div>
             <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
@@ -376,7 +418,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 <Crown className="w-3.5 h-3.5" />
                 <span>رتبة العضوية والتاج الملكي</span>
               </span>
-              <span className="text-[10px] text-zinc-400">تاج متحرك وتأثيرات أسطورية</span>
+              <span className="text-[10px] text-zinc-400">
+                {isOwner ? 'لوحة تحكم المالك الكاملة' : !hasApprovedVip ? 'مغلقة للمستخدمين الجدد 🔒' : 'رتبتك مفعلة'}
+              </span>
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(
@@ -390,15 +434,31 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 ] as const
               ).map((t) => {
                 const isSelected = vipTier === t.id;
+                const isTierLocked = !isOwner && t.id !== 'none' && (!hasApprovedVip || user.vipTier !== t.id);
+
                 return (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setVipTier(t.id as VIPTier)}
-                    className={`relative p-2 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-amber-400 bg-amber-500/15 shadow-md shadow-amber-500/20 scale-102 ring-1 ring-amber-400'
-                        : 'border-zinc-800 bg-[#0B0C12] hover:border-zinc-700 opacity-75 hover:opacity-100'
+                    onClick={() => {
+                      if (isTierLocked) {
+                        playSoundEffect('bell');
+                        setVipNotice(
+                          !hasApprovedVip
+                            ? `رتبة ${t.label} مغلقة للمستخدمين الجدد. يرجى التواصل مع المالك لتفعيلها.`
+                            : `الترقية إلى رتبة ${t.label} تتطلب تواصل مع المالك.`
+                        );
+                        return;
+                      }
+                      setVipTier(t.id as VIPTier);
+                      setVipNotice(null);
+                    }}
+                    className={`relative p-2 rounded-xl border flex flex-col items-center gap-1 transition-all ${
+                      isTierLocked
+                        ? 'border-zinc-800/80 bg-[#090A0E] opacity-50 cursor-not-allowed'
+                        : isSelected
+                        ? 'border-amber-400 bg-amber-500/15 shadow-md shadow-amber-500/20 scale-102 ring-1 ring-amber-400 cursor-pointer'
+                        : 'border-zinc-800 bg-[#0B0C12] hover:border-zinc-700 opacity-75 hover:opacity-100 cursor-pointer'
                     }`}
                   >
                     <div className="h-6 flex items-center justify-center">
@@ -415,6 +475,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                         ✓
                       </div>
                     )}
+                    {isTierLocked && (
+                      <div className="absolute top-1 left-1 p-0.5 rounded-full bg-black/70 text-amber-400 border border-amber-500/30">
+                        <Lock className="w-2.5 h-2.5" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -428,19 +493,19 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 <Palette className="w-3.5 h-3.5 text-amber-400" />
                 <span>لون السمة للحدود والخطوط (Theme Color)</span>
               </label>
-              {vipTier !== 'none' ? (
+              {(isOwner || hasApprovedVip) && vipTier !== 'none' ? (
                 <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30">
-                  ميزة VIP متاحة
+                  ميزة VIP مفعلة
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Lock className="w-2.5 h-2.5" />
-                  يتطلب رتبة VIP
+                <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Lock className="w-2.5 h-2.5 text-amber-400" />
+                  مغلقة للمستخدمين الجدد
                 </span>
               )}
             </div>
 
-            {vipTier !== 'none' ? (
+            {(isOwner || hasApprovedVip) && vipTier !== 'none' ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {ALL_VIP_THEMES.map((themeOption) => {
@@ -528,17 +593,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             ) : (
               <div className="p-3 rounded-xl bg-black/40 border border-zinc-800/80 text-center space-y-1.5">
                 <div className="text-xs text-zinc-400">
-                  خاصية تغيير لون السمة والحدود متاحة حصرياً لرتب VIP.
+                  خاصية تغيير لون السمة والحدود متاحة حصرياً لرتب VIP المفعلة من قبل المالك.
                 </div>
                 <div className="text-[11px] text-amber-400 font-bold">
-                  💡 اختر إحدى رتب VIP (برونزي، فضي، ذهبي، رويال، ميثيك) أعلاه لفتح لوحة الألوان وتخصيص هالة ملفك!
+                  🔒 يرجى التواصل مع المالك لتفعيل رتبة VIP والحصول على سمات الإضاءة والحدود الملكية.
                 </div>
               </div>
             )}
           </div>
 
-          {/* Exclusive Mythic Frame Selector (Only for highest VIP tier) */}
-          {vipTier === 'mythic' && (
+          {/* Exclusive Mythic Frame Selector (Only for highest VIP tier and verified/owner) */}
+          {(isOwner || (hasApprovedVip && vipTier === 'mythic')) && (
             <div className="p-4 rounded-2xl bg-gradient-to-b from-[#1C051B] to-[#0E0312] border-2 border-amber-400/50 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
@@ -565,7 +630,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                         setMythicFrameId(f.id);
                         playSoundEffect('vip_fanfare');
                       }}
-                      className={`p-2.5 rounded-xl border text-right transition-all flex flex-col items-center text-center gap-1.5 ${
+                      className={`p-2.5 rounded-xl border text-right transition-all flex flex-col items-center text-center gap-1.5 cursor-pointer ${
                         isSelected
                           ? 'bg-amber-500/20 border-amber-400 ring-2 ring-amber-400/70 shadow-lg'
                           : 'bg-[#100416] border-purple-900/40 hover:border-amber-400/40 text-zinc-300'

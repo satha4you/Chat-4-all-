@@ -9,14 +9,25 @@ interface VIPBadgeProps {
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showCrownOnly?: boolean;
   showText?: boolean;
+  shortText?: boolean;
   className?: string;
 }
+
+const CONCISE_TIER_NAMES: Record<VIPTier, string> = {
+  mythic: 'VIP 5 أسطوري',
+  royal: 'VIP 4 رويال',
+  gold: 'VIP 3 ذهبي',
+  silver: 'VIP 2 فضي',
+  bronze: 'VIP 1 برونزي',
+  none: '',
+};
 
 export const VIPBadge: React.FC<VIPBadgeProps> = ({
   tier,
   size = 'sm',
   showCrownOnly = false,
   showText = true,
+  shortText = false,
   className = '',
 }) => {
   if (tier === 'none') return null;
@@ -40,12 +51,17 @@ export const VIPBadge: React.FC<VIPBadgeProps> = ({
     lg: 'px-3.5 py-1.5 text-sm font-bold gap-2',
   }[size];
 
+  // Use concise title for smaller sizes or when shortText is requested to prevent overflowing cards
+  const displayText = shortText || size === 'xs' || size === 'sm'
+    ? CONCISE_TIER_NAMES[tier]
+    : config.nameAr;
+
   return (
     <span
-      className={`inline-flex items-center rounded-full font-medium whitespace-nowrap shadow-sm select-none transition-transform hover:scale-105 ${config.badgeBg} ${sizeClasses} ${className}`}
+      className={`inline-flex items-center rounded-full font-medium whitespace-nowrap shadow-sm select-none transition-transform hover:scale-105 max-w-full truncate ${config.badgeBg} ${sizeClasses} ${className}`}
     >
       <RealisticCrown tier={tier} size="xs" animated={true} />
-      {showText && <span>{config.nameAr}</span>}
+      {showText && <span className="truncate">{displayText}</span>}
     </span>
   );
 };
