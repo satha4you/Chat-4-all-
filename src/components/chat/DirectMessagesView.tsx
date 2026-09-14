@@ -5,6 +5,7 @@ import { VIPBadge } from '../common/VIPBadge';
 import { VIPName } from '../common/VIPName';
 import { VIPMessageBubble } from '../common/VIPMessageBubble';
 import { INITIAL_GIFTS } from '../../data/initialData';
+import { Gift3DIcon } from '../common/Gift3DIcon';
 import { MessageSquare, Send, Gift as GiftIcon, Sparkles, Check, CheckCheck, Crown } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
@@ -14,6 +15,7 @@ interface DirectMessagesViewProps {
   users: UserProfile[];
   onUserClick: (user: UserProfile) => void;
   targetUser?: UserProfile | null;
+  gifts?: Gift[];
 }
 
 export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
@@ -21,6 +23,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
   users,
   onUserClick,
   targetUser,
+  gifts,
 }) => {
   const otherUsers = users.filter((u) => u.id !== currentUser.id);
   const [selectedUser, setSelectedUser] = useState<UserProfile>(targetUser || otherUsers[0] || currentUser);
@@ -208,14 +211,20 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
               <span className="text-xs font-bold text-amber-300">اختر هدية خاصة لـ {selectedUser.nickname}:</span>
               <button onClick={() => setShowGiftSelector(false)} className="text-xs text-zinc-400">✕</button>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-              {INITIAL_GIFTS.map((g) => (
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 max-h-48 overflow-y-auto">
+              {(gifts && gifts.length > 0 ? gifts : INITIAL_GIFTS).map((g) => (
                 <button
                   key={g.id}
                   onClick={() => handleSendGift(g)}
                   className="p-2 rounded-xl bg-zinc-900 hover:bg-amber-950/60 border border-zinc-800 flex flex-col items-center group"
                 >
-                  <span className="text-2xl group-hover:scale-110 transition-transform">{g.icon}</span>
+                  <div className="w-8 h-8 group-hover:scale-110 transition-transform flex items-center justify-center">
+                    {g.icon && (g.icon.startsWith('/') || g.icon.startsWith('http') || g.icon.startsWith('data:')) ? (
+                      <img src={g.icon} alt={g.nameAr} className="w-full h-full object-contain" />
+                    ) : (
+                      <Gift3DIcon giftId={g.id} icon={g.icon} size="sm" />
+                    )}
+                  </div>
                   <span className="text-[9px] text-zinc-300 mt-1 truncate w-full text-center">{g.nameAr}</span>
                   <span className="text-[9px] text-amber-400 font-bold">{g.coins} 🪙</span>
                 </button>

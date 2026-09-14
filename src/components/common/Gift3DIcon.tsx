@@ -2,16 +2,17 @@ import React from 'react';
 
 interface Gift3DIconProps {
   giftId: string;
+  icon?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
 export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
   giftId,
+  icon,
   size = 'md',
   className = '',
 }) => {
-
   const sizeMap = {
     xs: 'w-6 h-6',
     sm: 'w-10 h-10',
@@ -22,14 +23,12 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
 
   const currentSize = sizeMap[size] || sizeMap.md;
 
-
   const giftImages: Record<string, string> = {
-
-    // الهدايا الأساسية
     gift_supercar: 'car.png',
     gift_castle: 'castle.png',
     gift_heart: 'heart.png',
     gift_dates: 'nakhla.png',
+    gift_nakhla: 'nakhla.png',
     gift_galaxy: 'planets.png',
     gift_sword: 'sword.png',
     gift_tree: 'tree.png',
@@ -48,15 +47,20 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
     gift_rocket: 'rocket.png',
     gift_golden_throne: 'the-throne.png',
     gift_perfume: 'musk.png',
-
   };
 
-
-const imageName =
-  giftImages[giftId] ||
-  giftImages[`gift_${giftId}`] ||
-  giftId;
-
+  // Determine image source
+  let resolvedSrc: string | null = null;
+  if (icon && (icon.startsWith('/') || icon.startsWith('http') || icon.startsWith('data:'))) {
+    resolvedSrc = icon;
+  } else {
+    const matched = giftImages[giftId] || giftImages[`gift_${giftId}`] || giftImages[giftId.replace('gift_', '')];
+    if (matched) {
+      resolvedSrc = `/assets/gifts/${matched}`;
+    } else if (giftId.endsWith('.png')) {
+      resolvedSrc = `/assets/gifts/${giftId}`;
+    }
+  }
 
   return (
     <div
@@ -71,7 +75,6 @@ const imageName =
         transformStyle: 'preserve-3d',
       }}
     >
-
       {/* إضاءة وظل ثلاثي الأبعاد */}
       <div
         className="
@@ -85,11 +88,9 @@ const imageName =
         "
       />
 
-
-      {imageName ? (
-
+      {resolvedSrc ? (
         <img
-          src={`/assets/gifts/${imageName}`}
+          src={resolvedSrc}
           alt={giftId}
           loading="lazy"
           className="
@@ -104,20 +105,11 @@ const imageName =
             e.currentTarget.style.display = 'none';
           }}
         />
-
       ) : (
-
-        <div
-          className="
-            text-4xl
-            animate-pulse
-          "
-        >
+        <div className="text-4xl animate-pulse">
           🎁
         </div>
-
       )}
-
     </div>
   );
 };

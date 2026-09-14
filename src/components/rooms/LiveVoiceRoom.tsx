@@ -3,6 +3,7 @@ import { VoiceRoom, UserProfile, RoomSeat, ChatMessage, Gift } from '../../types
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
 import { VIPName } from '../common/VIPName';
+import { Gift3DIcon } from '../common/Gift3DIcon';
 import { INITIAL_GIFTS } from '../../data/initialData';
 import { playSoundEffect } from '../../utils/soundEffects';
 import confetti from 'canvas-confetti';
@@ -48,6 +49,7 @@ interface LiveVoiceRoomProps {
   room: VoiceRoom;
   currentUser: UserProfile;
   allUsers?: UserProfile[];
+  gifts?: Gift[];
   onLeave: () => void;
   onUserClick: (user: UserProfile) => void;
   onUpdateRoom: (updatedRoom: VoiceRoom) => void;
@@ -57,10 +59,12 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   room,
   currentUser,
   allUsers = [],
+  gifts,
   onLeave,
   onUserClick,
   onUpdateRoom,
 }) => {
+  const currentGifts = gifts && gifts.length > 0 ? gifts : INITIAL_GIFTS;
   const [currentSeats, setCurrentSeats] = useState<RoomSeat[]>(room.seats);
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
@@ -100,7 +104,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const [hasRaisedHand, setHasRaisedHand] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [selectedSeatForGift, setSelectedSeatForGift] = useState<UserProfile | null>(room.host);
-  const [selectedGiftItem, setSelectedGiftItem] = useState<Gift>(INITIAL_GIFTS[0]);
+  const [selectedGiftItem, setSelectedGiftItem] = useState<Gift>(() => currentGifts[0] || INITIAL_GIFTS[0]);
   const [giftComboCount, setGiftComboCount] = useState<number>(1);
   const [giftFilterTab, setGiftFilterTab] = useState<'all' | 'common' | 'rare' | 'epic' | 'legendary'>('all');
   const [activeGiftEvent, setActiveGiftEvent] = useState<ActiveGiftEvent | null>(null);
@@ -1275,7 +1279,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>قائمة الهدايا التفاعلية ({INITIAL_GIFTS.length} هدية متوفرة):</span>
+                    <span>قائمة الهدايا التفاعلية ({currentGifts.length} هدية متوفرة):</span>
                   </label>
                   <span className="text-[10px] text-zinc-400">انقر للمعاينة أو الإرسال</span>
                 </div>
@@ -1283,11 +1287,11 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                 {/* Category Pills */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
                   {[
-                    { id: 'all', label: `الكل (${INITIAL_GIFTS.length})` },
-                    { id: 'common', label: `شائعة (${INITIAL_GIFTS.filter(g => g.rarity === 'common').length})` },
-                    { id: 'rare', label: `💎 نادرة (${INITIAL_GIFTS.filter(g => g.rarity === 'rare').length})` },
-                    { id: 'epic', label: `🌟 فاخرة (${INITIAL_GIFTS.filter(g => g.rarity === 'epic').length})` },
-                    { id: 'legendary', label: `👑 أسطورية (${INITIAL_GIFTS.filter(g => g.rarity === 'legendary').length})` },
+                    { id: 'all', label: `الكل (${currentGifts.length})` },
+                    { id: 'common', label: `شائعة (${currentGifts.filter(g => g.rarity === 'common').length})` },
+                    { id: 'rare', label: `💎 نادرة (${currentGifts.filter(g => g.rarity === 'rare').length})` },
+                    { id: 'epic', label: `🌟 فاخرة (${currentGifts.filter(g => g.rarity === 'epic').length})` },
+                    { id: 'legendary', label: `👑 أسطورية (${currentGifts.filter(g => g.rarity === 'legendary').length})` },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1306,7 +1310,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
 
                 {/* Gifts Grid */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
-                  {INITIAL_GIFTS.filter((g) => giftFilterTab === 'all' || g.rarity === giftFilterTab).map((gift) => {
+                  {currentGifts.filter((g) => giftFilterTab === 'all' || g.rarity === giftFilterTab).map((gift) => {
                     const isSelected = selectedGiftItem?.id === gift.id;
                     const effectConfig = getGiftEffectConfig(gift.id);
 
@@ -1325,14 +1329,18 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                           {gift.rarity === 'legendary' ? '👑 أسطوري' : gift.rarity === 'epic' ? '🌟 ملحمي' : gift.rarity === 'rare' ? '💎 نادر' : '✨ مميز'}
                         </span>
 
- {/* Gift Icon */}
-<div className="w-16 h-16 group-hover:scale-125 transition-transform duration-200 drop-shadow flex items-center justify-center">
-<img
-  src={gift.icon}
-  alt={gift.nameAr}
-  className="w-full h-full object-contain"
-/>
-</div>
+                        {/* Gift Icon */}
+                        <div className="w-16 h-16 group-hover:scale-125 transition-transform duration-200 drop-shadow flex items-center justify-center">
+                          {gift.icon && (gift.icon.startsWith('/') || gift.icon.startsWith('http')) ? (
+                            <img
+                              src={gift.icon}
+                              alt={gift.nameAr}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <Gift3DIcon giftId={gift.id} icon={gift.icon} size="md" />
+                          )}
+                        </div>
 
                         {/* Gift Name */}
                         <span className="text-[10px] font-bold text-zinc-200 truncate w-full mt-0.5">

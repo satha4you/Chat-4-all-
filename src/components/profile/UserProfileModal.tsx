@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, VIPTier, Gift, VIPThemeColorKey } from '../../types';
 import { VIP_CONFIGS, INITIAL_GIFTS } from '../../data/initialData';
+import { Gift3DIcon } from '../common/Gift3DIcon';
 import { LuxuryGamingProfile } from './LuxuryGamingProfile';
 import { RealisticCrown } from '../common/RealisticCrown';
 import { 
@@ -26,6 +27,7 @@ interface UserProfileModalProps {
   user: UserProfile | null;
   currentUser: UserProfile;
   isOpen: boolean;
+  gifts?: Gift[];
   onClose: () => void;
   onFollowToggle?: (userId: string) => void;
   onSendGift?: (receiver: UserProfile, gift: Gift) => void;
@@ -43,6 +45,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   user,
   currentUser,
   isOpen,
+  gifts,
   onClose,
   onFollowToggle,
   onSendGift,
@@ -314,14 +317,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   إلغاء
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {INITIAL_GIFTS.map((gift) => (
+              <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                {(gifts && gifts.length > 0 ? gifts : INITIAL_GIFTS).map((gift) => (
                   <button
                     key={gift.id}
                     onClick={() => handleQuickGift(gift)}
                     className="p-2 rounded-xl bg-[#140826] hover:bg-[#200D3D] border border-zinc-800 hover:border-amber-500/50 transition-all flex flex-col items-center group"
                   >
-                    <span className="text-2xl group-hover:scale-125 transition-transform">{gift.icon}</span>
+                    <div className="w-8 h-8 group-hover:scale-125 transition-transform flex items-center justify-center">
+                      {gift.icon && (gift.icon.startsWith('/') || gift.icon.startsWith('http') || gift.icon.startsWith('data:')) ? (
+                        <img src={gift.icon} alt={gift.nameAr} className="w-full h-full object-contain" />
+                      ) : (
+                        <Gift3DIcon giftId={gift.id} icon={gift.icon} size="sm" />
+                      )}
+                    </div>
                     <span className="text-[10px] text-zinc-200 mt-1 truncate w-full text-center">{gift.nameAr}</span>
                     <span className="text-[9px] font-bold text-yellow-400">{gift.coins} 🪙</span>
                   </button>
