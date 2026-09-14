@@ -6,8 +6,8 @@ export interface GiftEffectConfig {
   colors: string[];
   emojis: string[];
   shapes: ('circle' | 'square' | 'star')[];
-  sound: 'gift_sparkle' | 'oud_chord' | 'bell' | 'cheer' | 'vip_fanfare' | 'applause';
-  secondarySound?: 'gift_sparkle' | 'oud_chord' | 'bell' | 'cheer' | 'vip_fanfare' | 'applause';
+  sound: 'gift_sparkle' | 'oud_chord' | 'bell' | 'cheer' | 'vip_fanfare' | 'applause' | 'dragon_roar' | 'falcon_cry';
+  secondarySound?: 'gift_sparkle' | 'oud_chord' | 'bell' | 'cheer' | 'vip_fanfare' | 'applause' | 'dragon_roar' | 'falcon_cry';
   rarityLabelAr: string;
   rarityBadgeBg: string;
   borderGlowColor: string;
@@ -134,9 +134,9 @@ export const GIFT_EFFECT_CONFIGS: Record<string, GiftEffectConfig> = {
     colors: ['#D4AF37', '#38BDF8', '#F59E0B', '#FFFFFF', '#0284C7'],
     emojis: ['🦅', '🪶', '⚡', '👑', '🌟', '✨'],
     shapes: ['star', 'square', 'circle'],
-    sound: 'cheer',
+    sound: 'falcon_cry',
     secondarySound: 'vip_fanfare',
-    rarityLabelAr: 'صقر العز والشموخ',
+    rarityLabelAr: 'صقر العز والشموخ الملكي',
     rarityBadgeBg: 'from-blue-600 via-cyan-500 to-amber-400',
     borderGlowColor: 'rgba(56, 189, 248, 0.6)',
     particleCount: 170,
@@ -208,15 +208,15 @@ export const GIFT_EFFECT_CONFIGS: Record<string, GiftEffectConfig> = {
     particleCount: 270,
   },
   gift_dragon: {
-    colors: ['#EF4444', '#F97316', '#F59E0B', '#DC2626', '#7F1D1D', '#FDE047'],
+    colors: ['#FFDF00', '#F59E0B', '#EF4444', '#DC2626', '#7F1D1D', '#FDE047'],
     emojis: ['🐉', '🔥', '☄️', '⚡', '👑', '💥', '✨'],
     shapes: ['star', 'square', 'circle'],
-    sound: 'vip_fanfare',
-    secondarySound: 'applause',
-    rarityLabelAr: 'تنين اللهب الأسطوري الخالد',
-    rarityBadgeBg: 'from-red-700 via-orange-600 to-yellow-400',
-    borderGlowColor: 'rgba(239, 68, 68, 0.85)',
-    particleCount: 290,
+    sound: 'dragon_roar',
+    secondarySound: 'vip_fanfare',
+    rarityLabelAr: 'تنين الذهب الأسطوري الخالد',
+    rarityBadgeBg: 'from-amber-600 via-yellow-500 to-red-600',
+    borderGlowColor: 'rgba(245, 158, 11, 0.9)',
+    particleCount: 300,
   },
   gift_meteor: {
     colors: ['#F97316', '#A855F7', '#EC4899', '#3B82F6', '#FFFFFF'],

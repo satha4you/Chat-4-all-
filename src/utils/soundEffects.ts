@@ -12,12 +12,66 @@ function getAudioContext(): AudioContext {
   return audioCtx;
 }
 
-export const playSoundEffect = (type: 'vip_fanfare' | 'gift_sparkle' | 'applause' | 'oud_chord' | 'bell' | 'cheer' | 'mic_on' | 'mic_off') => {
+export const playSoundEffect = (type: 'vip_fanfare' | 'gift_sparkle' | 'applause' | 'oud_chord' | 'bell' | 'cheer' | 'mic_on' | 'mic_off' | 'dragon_roar' | 'falcon_cry') => {
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
 
     switch (type) {
+      case 'dragon_roar': {
+        // Deep imperial resonant roar with golden ascending harmonics
+        const bassNotes = [110, 146.83, 220, 330]; // A2, D3, A3, E4
+        bassNotes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + idx * 0.05 + 0.6);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.8, now + idx * 0.05 + 1.6);
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(800, now);
+          filter.frequency.exponentialRampToValueAtTime(2400, now + 0.4);
+          filter.frequency.exponentialRampToValueAtTime(400, now + 1.8);
+
+          gain.gain.setValueAtTime(0.01, now + idx * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.28, now + idx * 0.05 + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 1.8);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + idx * 0.05);
+          osc.stop(now + idx * 0.05 + 1.9);
+        });
+        break;
+      }
+
+      case 'falcon_cry': {
+        // High majestic falcon cry followed by golden wind swoosh
+        const falconPitches = [880, 1318.51, 1760, 2093]; // A5, E6, A6, C7
+        falconPitches.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.3, now + idx * 0.04 + 0.15);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + idx * 0.04 + 0.7);
+
+          gain.gain.setValueAtTime(0.01, now + idx * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.22, now + idx * 0.04 + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.8);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + idx * 0.04);
+          osc.stop(now + idx * 0.04 + 0.85);
+        });
+        break;
+      }
       case 'vip_fanfare': {
         // Royal fanfare triad chord arpeggio
         const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6

@@ -6,6 +6,8 @@ import { VIPName } from '../../common/VIPName';
 import { getGiftEffectConfig } from '../../../utils/giftEffects';
 import { GiftParticleCanvas } from './GiftParticleCanvas';
 import { GiftSceneAnimation } from './GiftSceneAnimation';
+import { GoldenDragonEffect } from './GoldenDragonEffect';
+import { RoyalFalconEffect } from './RoyalFalconEffect';
 import { Sparkles, Crown, X, Heart, Zap } from 'lucide-react';
 
 export interface ActiveGiftEvent {
@@ -29,10 +31,16 @@ export const GiftCelebrationOverlay: React.FC<GiftCelebrationOverlayProps> = ({
   useEffect(() => {
     if (!activeGiftEvent) return;
 
-    // Auto dismiss after 4.5 seconds
+    // High value dragon/falcon gets 5 seconds to complete cinematic screen flight
+    const isHighValue =
+      activeGiftEvent.gift.coins >= 1200 ||
+      activeGiftEvent.gift.id === 'gift_dragon' ||
+      activeGiftEvent.gift.id === 'gift_falcon';
+    const duration = isHighValue ? 5000 : 4200;
+
     const timer = setTimeout(() => {
       onDismiss();
-    }, 4500);
+    }, duration);
 
     return () => clearTimeout(timer);
   }, [activeGiftEvent, onDismiss]);
@@ -41,6 +49,80 @@ export const GiftCelebrationOverlay: React.FC<GiftCelebrationOverlayProps> = ({
 
   const { gift, sender, receiver, comboCount } = activeGiftEvent;
   const config = getGiftEffectConfig(gift.id);
+
+  // Check if this high value gift activates the Golden Dragon effect
+  const isDragon =
+    gift.id === 'gift_dragon' ||
+    gift.animationType === 'dragon' ||
+    gift.coins >= 25000 ||
+    ['gift_galaxy', 'gift_phoenix', 'gift_rocket', 'gift_golden_throne', 'gift_meteor', 'gift_lion'].includes(gift.id);
+
+  // Check if this high value gift activates the Royal Golden Falcon effect
+  const isFalcon =
+    !isDragon &&
+    (gift.id === 'gift_falcon' ||
+      gift.animationType === 'falcon' ||
+      (gift.coins >= 1200 && gift.coins < 25000));
+
+  // 1. High-Value Mythic Golden Dragon Visual Effect
+  if (isDragon) {
+    return (
+      <div className="absolute inset-0 z-40 overflow-hidden pointer-events-none select-none">
+        {/* Close Button at top left */}
+        <button
+          onClick={onDismiss}
+          className="absolute top-4 left-4 p-1.5 rounded-full bg-black/80 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-amber-500/50 shadow-lg z-50 pointer-events-auto cursor-pointer transition-colors"
+          title="إغلاق التأثير"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Dynamic Golden Particle Canvas */}
+        <GiftParticleCanvas
+          isActive={!!activeGiftEvent}
+          config={{
+            ...config,
+            colors: ['#FFDF00', '#F59E0B', '#EF4444', '#FFFFFF'],
+          }}
+          durationMs={4800}
+        />
+
+        {/* Golden Dragon Component Traversing Screen */}
+        <GoldenDragonEffect event={activeGiftEvent} />
+      </div>
+    );
+  }
+
+  // 2. High-Value Royal Falcon Visual Effect
+  if (isFalcon) {
+    return (
+      <div className="absolute inset-0 z-40 overflow-hidden pointer-events-none select-none">
+        {/* Close Button at top left */}
+        <button
+          onClick={onDismiss}
+          className="absolute top-4 left-4 p-1.5 rounded-full bg-black/80 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-cyan-400/50 shadow-lg z-50 pointer-events-auto cursor-pointer transition-colors"
+          title="إغلاق التأثير"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Dynamic Falcon Sparkle Particle Canvas */}
+        <GiftParticleCanvas
+          isActive={!!activeGiftEvent}
+          config={{
+            ...config,
+            colors: ['#38BDF8', '#F59E0B', '#FFFBEB', '#FFD700'],
+          }}
+          durationMs={4600}
+        />
+
+        {/* Royal Falcon Component Soaring Across Screen */}
+        <RoyalFalconEffect event={activeGiftEvent} />
+      </div>
+    );
+  }
+
+  // 3. Standard & Other Themed Gifts (Center Card + Particles)
 
   return (
     <div className="absolute inset-0 z-40 flex flex-col items-center justify-center p-4 overflow-hidden pointer-events-none select-none">

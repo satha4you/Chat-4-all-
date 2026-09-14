@@ -495,18 +495,17 @@ export const VIPMessageBubble: React.FC<VIPMessageBubbleProps> = ({
           />
         </div>
 
-        <div className={`flex-1 min-w-0 rounded-2xl p-2.5 sm:px-3.5 sm:py-2.5 border transition-colors ${bubbleStyles.containerBg} ${bubbleStyles.borderColor}`}>
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+        <div className={`flex-1 min-w-0 rounded-2xl p-2 px-3 sm:px-3.5 sm:py-2 border transition-colors ${bubbleStyles.containerBg} ${bubbleStyles.borderColor}`}>
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
               <VIPName user={sender} size="xs" showRoleTag={false} />
               {additionalRoleBadge}
-              {isMe && <span className="text-[10px] text-amber-300/80 font-bold">(أنت)</span>}
             </div>
             <span className="text-[10px] font-mono shrink-0 text-zinc-400 bg-black/30 px-1.5 py-0.5 rounded">
               {timestamp}
             </span>
           </div>
-          <p className="text-[13px] text-zinc-100 font-medium break-words leading-relaxed select-text whitespace-pre-wrap">
+          <p className="text-[13px] text-zinc-100 font-medium break-words leading-normal select-text whitespace-pre-wrap">
             {content}
           </p>
         </div>
@@ -536,46 +535,19 @@ export const VIPMessageBubble: React.FC<VIPMessageBubbleProps> = ({
 
       {/* 2. Master Luxury Message Bubble Container matching chosen frame */}
       <div
-        className={`flex-1 min-w-0 relative rounded-2xl p-2.5 sm:px-4 sm:py-2.5 transition-all duration-300 ${
+        className={`flex-1 min-w-0 relative rounded-2xl p-2 px-3 sm:px-3.5 sm:py-2 transition-all duration-300 ${
           bubbleStyles.containerBg
         } ${bubbleStyles.borderColor} ${bubbleStyles.borderGlow}`}
       >
-        {/* Header Row: Always Natural RTL order (Sender Name -> Role Badge -> Frame/VIP Pill -> Time) */}
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          {/* Right/Leading Group: Name + Verification + Role + VIP Level */}
-          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+        {/* Header Row: Always Natural RTL order (Sender Name -> Role Badge -> Time) */}
+        <div className="flex items-center justify-between gap-2 mb-0.5">
+          {/* Right/Leading Group: Name + Verification + Role */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
             {/* Sender Name with VIP styling & verification */}
             <VIPName user={sender} size="xs" showRoleTag={false} />
 
             {/* Additional Host/Owner/Mod Badge if applicable */}
             {additionalRoleBadge}
-
-            {/* Frame / VIP Pill Badge */}
-            {bubbleStyles.tierLabel && (
-              <div
-                className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide shadow-sm flex items-center gap-1 shrink-0 ${bubbleStyles.pillBg}`}
-              >
-                <span>{bubbleStyles.frameIcon}</span>
-                <span>{bubbleStyles.tierLabel}</span>
-              </div>
-            )}
-
-            {/* Mini Winged Lion Crest matching the user's chosen frame colors */}
-            {bubbleStyles.crestTier !== 'none' && (
-              <div className="relative shrink-0">
-                <WingedLionCrest
-                  tier={bubbleStyles.crestTier}
-                  frameId={bubbleStyles.frameId}
-                  size={22}
-                />
-              </div>
-            )}
-
-            {isMe && (
-              <span className="text-[10px] text-amber-300/80 font-bold shrink-0">
-                (أنت)
-              </span>
-            )}
           </div>
 
           {/* Timestamp - Left side of the bubble */}
@@ -587,7 +559,7 @@ export const VIPMessageBubble: React.FC<VIPMessageBubbleProps> = ({
         {/* Message Content Text */}
         <div className="relative z-10 px-0.5">
           <p
-            className={`text-[13px] sm:text-[14px] font-semibold break-words leading-relaxed select-text tracking-wide whitespace-pre-wrap ${
+            className={`text-[13px] sm:text-[13.5px] font-semibold break-words leading-normal select-text tracking-wide whitespace-pre-wrap ${
               bubbleStyles.textColor
             }`}
           >

@@ -144,7 +144,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       id: 'msg_rate_' + Date.now(),
       roomId: room.id,
       sender: currentUser,
-      content: `🌟 قام ${currentUser.name} بتقييم الغرفة بـ ${stars} نجوم ${starStr}${tagStr}`,
+      content: `🌟 قام ${currentUser.nickname || currentUser.username} بتقييم الغرفة بـ ${stars} نجوم ${starStr}${tagStr}`,
       type: 'system',
       timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
     };
@@ -545,25 +545,27 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
 
   const handleSendGift = (gift: Gift, count: number = giftComboCount) => {
     const receiver = selectedSeatForGift || room.host;
+    const giftEventId = 'gift_ev_' + Date.now();
     
     // 1. Launch dynamic confetti fireworks & synthesized sound effects
     launchGiftConfetti(gift, count);
 
     // 2. Set active gift event for celebration banner & floating particle canvas
-    setActiveGiftEvent({
-      id: 'gift_ev_' + Date.now(),
+    const newGiftEvent: ActiveGiftEvent = {
+      id: giftEventId,
       gift,
       sender: currentUser,
       receiver,
       comboCount: count,
       timestamp: Date.now(),
-    });
+    };
+    setActiveGiftEvent(newGiftEvent);
 
     // 3. Highlight target receiver seat on stage
     setHighlightedSeatUserId(receiver.id);
     setTimeout(() => {
       setHighlightedSeatUserId((curr) => (curr === receiver.id ? null : curr));
-    }, 4500);
+    }, 4800);
 
     // 4. Create rich chat record
     const giftMsg: ChatMessage = {
@@ -582,7 +584,85 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
 
     setMessages((prev) => [...prev, giftMsg]);
     setShowGiftModal(false);
+
+    // 5. Broadcast real-time gift celebration to all participants in this room
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('royal_room_gift_broadcast');
+        bc.postMessage({ roomId: room.id, event: newGiftEvent, chatMsg: giftMsg });
+        bc.close();
+      }
+      localStorage.setItem(
+        'royal_room_gift_sync_signal',
+        JSON.stringify({ roomId: room.id, event: newGiftEvent, chatMsg: giftMsg, ts: Date.now() })
+      );
+    } catch (e) {
+      console.warn('Room gift broadcast error:', e);
+    }
   };
+
+  // Real-time synchronization of gift effects (Dragon, Falcon, high-value gifts) across all room participants
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel('royal_room_gift_broadcast');
+        bc.onmessage = (e) => {
+          if (e.data && e.data.roomId === room.id && e.data.event) {
+            const incomingEv = e.data.event as ActiveGiftEvent;
+            if (incomingEv.sender.id !== currentUser.id) {
+              launchGiftConfetti(incomingEv.gift, incomingEv.comboCount);
+              setActiveGiftEvent(incomingEv);
+              setHighlightedSeatUserId(incomingEv.receiver.id);
+              if (e.data.chatMsg) {
+                setMessages((prev) => {
+                  if (prev.some((m) => m.id === e.data.chatMsg.id)) return prev;
+                  return [...prev, e.data.chatMsg];
+                });
+              }
+              setTimeout(() => {
+                setHighlightedSeatUserId((curr) => (curr === incomingEv.receiver.id ? null : curr));
+              }, 4800);
+            }
+          }
+        };
+      } catch (err) {
+        console.warn('BroadcastChannel error:', err);
+      }
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'royal_room_gift_sync_signal' && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data && data.roomId === room.id && data.event && data.event.sender.id !== currentUser.id) {
+            const incomingEv = data.event as ActiveGiftEvent;
+            launchGiftConfetti(incomingEv.gift, incomingEv.comboCount);
+            setActiveGiftEvent(incomingEv);
+            setHighlightedSeatUserId(incomingEv.receiver.id);
+            if (data.chatMsg) {
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === data.chatMsg.id)) return prev;
+                return [...prev, data.chatMsg];
+              });
+            }
+            setTimeout(() => {
+              setHighlightedSeatUserId((curr) => (curr === incomingEv.receiver.id ? null : curr));
+            }, 4800);
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [room.id, currentUser.id]);
 
   const handlePreviewGiftEffect = (gift: Gift, count: number = giftComboCount) => {
     const receiver = selectedSeatForGift || room.host;

@@ -254,4 +254,95 @@ font-family: "AbdoLine", sans-serif;
   animation: calm-soundwave 1.2s ease-in-out infinite 0.5s;
 }
 
+/* Mythic Golden Dragon Rapid 3D Traversal */
+@keyframes goldenDragonTraverse {
+  0% {
+    transform: perspective(1000px) translate3d(-150%, 40px, -200px) scale(0.6) rotateY(-35deg) rotateX(15deg) rotateZ(8deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  20% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(-40%, -15px, 60px) scale(1.1) rotateY(-15deg) rotateX(6deg) rotateZ(-4deg);
+    filter: blur(0);
+  }
+  50% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(15%, 25px, 140px) scale(1.28) rotateY(2deg) rotateX(12deg) rotateZ(6deg);
+    filter: blur(0);
+  }
+  80% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(85%, -10px, 40px) scale(1.08) rotateY(20deg) rotateX(-6deg) rotateZ(-6deg);
+    filter: blur(0);
+  }
+  100% {
+    transform: perspective(1000px) translate3d(160%, 30px, -180px) scale(0.65) rotateY(35deg) rotateX(12deg) rotateZ(10deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+/* Royal Golden Falcon Supersonic 3D Soaring Dive */
+@keyframes royalFalconGlide {
+  0% {
+    transform: perspective(1000px) translate3d(150%, -120px, -200px) scale(0.6) rotateY(30deg) rotateX(-22deg) rotateZ(-32deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  25% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(45%, -10px, 80px) scale(1.15) rotateY(15deg) rotateX(-6deg) rotateZ(-16deg);
+    filter: blur(0);
+  }
+  55% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(-15%, 70px, 150px) scale(1.35) rotateY(-4deg) rotateX(8deg) rotateZ(8deg);
+    filter: blur(0);
+  }
+  80% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(-80%, 150px, 50px) scale(1.1) rotateY(-18deg) rotateX(18deg) rotateZ(20deg);
+    filter: blur(0);
+  }
+  100% {
+    transform: perspective(1000px) translate3d(-160%, 240px, -180px) scale(0.65) rotateY(-32deg) rotateX(26deg) rotateZ(32deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+/* Fast Aerodynamic Falcon Wing Flap */
+@keyframes falconFlap {
+  0%, 100% {
+    transform: scaleY(1) rotateZ(0deg) rotateX(0deg);
+  }
+  50% {
+    transform: scaleY(0.6) rotateZ(8deg) rotateX(20deg);
+  }
+}
+
+/* Sonic Shockwave Ring */
+@keyframes sonicShockwave {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+/* Dragon Whiskers & Mane Dynamic Flutter */
+@keyframes dragonWhiskers {
+  0%, 100% {
+    transform: rotate(0deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(18deg) scaleX(1.15) scaleY(0.9);
+  }
+}
+
+
 

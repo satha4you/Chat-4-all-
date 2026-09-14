@@ -298,8 +298,8 @@ export const INITIAL_GIFTS: Gift[] = [
   },
   {
     id: 'gift_falcon',
-    nameAr: 'صقر حر أصيل',
-    nameEn: 'Royal Falcon',
+    nameAr: 'صقر العز والشموخ الملكي',
+    nameEn: 'Royal Golden Falcon',
     icon: '🦅',
     coins: 2000,
     animationType: 'falcon',
@@ -361,8 +361,8 @@ export const INITIAL_GIFTS: Gift[] = [
   },
   {
     id: 'gift_dragon',
-    nameAr: 'تنين اللهب الأسطوري',
-    nameEn: 'Mythic Dragon',
+    nameAr: 'تنين الذهب الأسطوري',
+    nameEn: 'Mythic Golden Dragon',
     icon: '🐉',
     coins: 40000,
     animationType: 'dragon',
