@@ -1326,9 +1326,9 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                         </span>
 
                         {/* Gift Icon */}
-                        <span className="text-3xl group-hover:scale-125 transition-transform duration-200 my-0.5 drop-shadow">
-                          {gift.icon}
-                        </span>
+                       <div className="text-5xl group-hover:scale-125 transition-transform duration-200 drop-shadow">
+  {gift.icon}
+</div>
 
                         {/* Gift Name */}
                         <span className="text-[10px] font-bold text-zinc-200 truncate w-full mt-0.5">
