@@ -49,15 +49,6 @@ export const Gift3DIcon: React.FC<Gift3DIconProps> = ({
     gift_golden_throne: 'the-throne.png',
     gift_perfume: 'musk.png',
 
-
-    // هدايا إضافية
-    gift_dragon: 'dragon.png',
-    gift_horse: 'horse.png',
-    gift_falcon: 'falcon.png',
-    gift_phoenix: 'phoenix.png',
-    gift_meteor: 'meteor.png',
-    gift_emerald_bouquet: 'emerald-bouquet.png',
-
   };
 
 
