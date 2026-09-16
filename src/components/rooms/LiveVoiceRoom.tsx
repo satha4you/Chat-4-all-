@@ -44,6 +44,20 @@ import { RoomModeratorsModal } from './RoomModeratorsModal';
 import { EditRoomModal } from './EditRoomModal';
 import { RoomVerifiedBadge } from '../common/RoomVerifiedBadge';
 import { VerifiedBadge } from '../common/VerifiedBadge';
+import {
+  getSocket,
+  joinRealtimeRoom,
+  leaveRealtimeRoom,
+  takeRealtimeSeat,
+  leaveRealtimeSeat,
+  toggleRealtimeMic,
+  updateRealtimeSpeakingStatus,
+  sendRealtimeChatMessage,
+  clearRealtimeChat,
+  broadcastRealtimeGift,
+  sendRealtimeModeratorAction,
+} from '../../services/realtime';
+import { WebRTCVoiceManager } from '../../services/webrtc';
 
 interface LiveVoiceRoomProps {
   room: VoiceRoom;
@@ -162,6 +176,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const micGainNodeRef = useRef<GainNode | null>(null);
   const synthGainRef = useRef<GainNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const webrtcVoiceManagerRef = useRef<WebRTCVoiceManager | null>(null);
 
   const isHost = room.host.id === currentUser.id;
   const isModerator = isHost || (room.moderators || []).includes(currentUser.id) || currentUser.role === 'owner' || currentUser.role === 'admin';
@@ -233,6 +248,126 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // Multi-user Real-Time synchronization and WebRTC audio integration
+  useEffect(() => {
+    // 1. Join room over WebSocket
+    joinRealtimeRoom(room.id, currentUser);
+
+    // 2. Initialize WebRTC voice manager for P2P voice exchange between stage participants
+    const voiceManager = new WebRTCVoiceManager(room.id, currentUser.id, {
+      onRemoteStreamAdded: (peerUserId, remoteStream) => {
+        console.log('Received remote WebRTC audio stream from speaker:', peerUserId, remoteStream);
+      },
+    });
+    webrtcVoiceManagerRef.current = voiceManager;
+
+    const socket = getSocket();
+
+    const handleRoomSync = (data: { seats?: any[]; participants?: any[] }) => {
+      if (data?.seats && Array.isArray(data.seats)) {
+        setCurrentSeats((prev) =>
+          data.seats!.map((s, idx) => {
+            const existing = prev[idx] || s;
+            return {
+              ...existing,
+              user: s.user || null,
+              isMuted: s.isMuted ?? existing.isMuted,
+              isLocked: s.isLocked ?? existing.isLocked,
+              isSpeaking: s.isSpeaking ?? false,
+              audioLevel: s.audioLevel ?? 0,
+            };
+          })
+        );
+      }
+    };
+
+    const handleSeatTaken = (data: { seatIndex: number; user: UserProfile }) => {
+      setCurrentSeats((prev) =>
+        prev.map((s, idx) => (idx === data.seatIndex ? { ...s, user: data.user, isMuted: true } : s))
+      );
+    };
+
+    const handleSeatLeft = (data: { seatIndex: number; userId?: string }) => {
+      setCurrentSeats((prev) =>
+        prev.map((s, idx) => (idx === data.seatIndex ? { ...s, user: null, isSpeaking: false, audioLevel: 0 } : s))
+      );
+    };
+
+    const handleMicToggled = (data: { seatIndex: number; isMuted: boolean }) => {
+      setCurrentSeats((prev) =>
+        prev.map((s, idx) => (idx === data.seatIndex ? { ...s, isMuted: data.isMuted } : s))
+      );
+    };
+
+    const handleSpeakingStatus = (data: { seatIndex: number; isSpeaking: boolean; audioLevel: number }) => {
+      setCurrentSeats((prev) =>
+        prev.map((s, idx) =>
+          idx === data.seatIndex
+            ? { ...s, isSpeaking: data.isSpeaking, audioLevel: data.audioLevel }
+            : s
+        )
+      );
+    };
+
+    const handleNewMessage = (data: { message: ChatMessage }) => {
+      if (data?.message) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+      }
+    };
+
+    const handleChatCleared = (data: { welcomeMsg: ChatMessage }) => {
+      if (data?.welcomeMsg) {
+        setMessages([data.welcomeMsg]);
+      }
+    };
+
+    const handleGiftBroadcast = (data: { giftEvent: ActiveGiftEvent }) => {
+      if (data?.giftEvent && data.giftEvent.sender.id !== currentUser.id) {
+        launchGiftConfetti(data.giftEvent.gift, data.giftEvent.comboCount);
+        setActiveGiftEvent(data.giftEvent);
+      }
+    };
+
+    const handleModAction = (data: { action: string; targetUserId: string }) => {
+      if (data.targetUserId === currentUser.id) {
+        if (data.action === 'kick') {
+          alert('تم استبعادك من الغرفة من قِبل إدارة الديوان الصوتي.');
+          onLeave();
+        } else if (data.action === 'mute') {
+          setIsMicOn(false);
+          stopRealMicrophone();
+        }
+      }
+    };
+
+    socket.on('room:sync', handleRoomSync);
+    socket.on('room:seat_taken', handleSeatTaken);
+    socket.on('room:seat_left', handleSeatLeft);
+    socket.on('room:mic_toggled', handleMicToggled);
+    socket.on('room:speaking_status', handleSpeakingStatus);
+    socket.on('chat:new_message', handleNewMessage);
+    socket.on('chat:cleared', handleChatCleared);
+    socket.on('room:gift_broadcast', handleGiftBroadcast);
+    socket.on('room:moderator_action', handleModAction);
+
+    return () => {
+      leaveRealtimeRoom(room.id);
+      voiceManager.destroy();
+      socket.off('room:sync', handleRoomSync);
+      socket.off('room:seat_taken', handleSeatTaken);
+      socket.off('room:seat_left', handleSeatLeft);
+      socket.off('room:mic_toggled', handleMicToggled);
+      socket.off('room:speaking_status', handleSpeakingStatus);
+      socket.off('chat:new_message', handleNewMessage);
+      socket.off('chat:cleared', handleChatCleared);
+      socket.off('room:gift_broadcast', handleGiftBroadcast);
+      socket.off('room:moderator_action', handleModAction);
+    };
+  }, [room.id, currentUser.id]);
 
   // Real microphone capture when seated and mic is active
   useEffect(() => {
@@ -365,6 +500,9 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         },
       });
       micStreamRef.current = stream;
+      if (webrtcVoiceManagerRef.current) {
+        webrtcVoiceManagerRef.current.setLocalStream(stream);
+      }
 
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const audioCtx = new AudioCtx();
@@ -388,6 +526,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       micGainNodeRef.current = micGain;
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let lastSpeakingStatusBroadcast = 0;
 
       const checkVolume = () => {
         if (!analyserRef.current) return;
@@ -398,14 +537,22 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         }
         const average = sum / dataArray.length;
         const normalized = Math.min(100, Math.floor((average / 128) * 100));
+        const isSpeakingNow = normalized > 15;
 
         setCurrentSeats((prev) =>
           prev.map((s, i) =>
             i === mySeatIndex
-              ? { ...s, isSpeaking: normalized > 15, audioLevel: normalized }
+              ? { ...s, isSpeaking: isSpeakingNow, audioLevel: normalized }
               : s
           )
         );
+
+        // Throttle WebSocket speaking level broadcasting
+        const now = Date.now();
+        if (mySeatIndex !== -1 && now - lastSpeakingStatusBroadcast > 200) {
+          lastSpeakingStatusBroadcast = now;
+          updateRealtimeSpeakingStatus(room.id, currentUser.id, isSpeakingNow, normalized);
+        }
 
         animationFrameRef.current = requestAnimationFrame(checkVolume);
       };
@@ -426,6 +573,9 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const stopRealMicrophone = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (webrtcVoiceManagerRef.current) {
+      webrtcVoiceManagerRef.current.setLocalStream(null);
     }
     if (micGainNodeRef.current) {
       micGainNodeRef.current.disconnect();
@@ -449,12 +599,15 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
           i === mySeatIndex ? { ...s, isSpeaking: false, audioLevel: 0 } : s
         )
       );
+      updateRealtimeSpeakingStatus(room.id, currentUser.id, false, 0);
     }
   };
 
   const handleTakeSeat = (seatIndex: number) => {
     if (isSeated) {
       // Move seat
+      leaveRealtimeSeat(room.id, currentUser.id);
+      takeRealtimeSeat(room.id, seatIndex, currentUser);
       const updated = currentSeats.map((s, i) => {
         if (i === mySeatIndex) return { ...s, user: null, isSpeaking: false };
         if (i === seatIndex) return { ...s, user: currentUser, isMuted: !isMicOn };
@@ -468,6 +621,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         alert('هذا المقعد مقفل من قبل المشرف.');
         return;
       }
+      takeRealtimeSeat(room.id, seatIndex, currentUser);
       const updated = currentSeats.map((s, i) =>
         i === seatIndex ? { ...s, user: currentUser, isMuted: true } : s
       );
@@ -479,6 +633,9 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   };
 
   const handleLeaveSeat = () => {
+    if (mySeatIndex !== -1) {
+      leaveRealtimeSeat(room.id, currentUser.id);
+    }
     stopRealMicrophone();
     setIsMicOn(false);
     const updated = currentSeats.map((s, i) =>
@@ -492,6 +649,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     if (!isSeated) return;
     const nextState = !isMicOn;
     setIsMicOn(nextState);
+    toggleRealtimeMic(room.id, currentUser.id, !nextState);
     if (!nextState) {
       playSoundEffect('mic_off');
       if (micStreamRef.current) {
@@ -528,6 +686,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     };
 
     setMessages((prev) => [...prev, newMsg]);
+    sendRealtimeChatMessage(room.id, newMsg);
   };
 
   const handleClearChat = () => {
@@ -540,6 +699,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages([welcomeMsg]);
+    clearRealtimeChat(room.id, welcomeMsg);
     try {
       localStorage.setItem(`royal_room_chat_${room.id}`, JSON.stringify([welcomeMsg]));
     } catch (e) {
@@ -590,6 +750,8 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     setShowGiftModal(false);
 
     // 5. Broadcast real-time gift celebration to all participants in this room
+    broadcastRealtimeGift(room.id, newGiftEvent, giftMsg);
+    sendRealtimeChatMessage(room.id, giftMsg);
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const bc = new BroadcastChannel('royal_room_gift_broadcast');
@@ -695,7 +857,11 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   // Moderator seat action
   const handleModeratorSeatAction = (action: 'mute' | 'lock' | 'kick', seat: RoomSeat) => {
     if (!isModerator) return;
+    sendRealtimeModeratorAction(room.id, action, seat.seatIndex);
     if (action === 'mute') {
+      if (seat.user) {
+        toggleRealtimeMic(room.id, seat.user.id, true);
+      }
       setCurrentSeats((prev) =>
         prev.map((s) => (s.seatIndex === seat.seatIndex ? { ...s, isMuted: !s.isMuted } : s))
       );
@@ -704,6 +870,9 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         prev.map((s) => (s.seatIndex === seat.seatIndex ? { ...s, isLocked: !s.isLocked } : s))
       );
     } else if (action === 'kick') {
+      if (seat.user) {
+        leaveRealtimeSeat(room.id, seat.user.id);
+      }
       setCurrentSeats((prev) =>
         prev.map((s) => (s.seatIndex === seat.seatIndex ? { ...s, user: null, isSpeaking: false } : s))
       );

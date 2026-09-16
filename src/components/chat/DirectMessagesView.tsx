@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, ChatMessage, Gift } from '../../types';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
@@ -9,6 +9,7 @@ import { Gift3DIcon } from '../common/Gift3DIcon';
 import { MessageSquare, Send, Gift as GiftIcon, Sparkles, Check, CheckCheck, Crown } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
+import { getSocket } from '../../services/realtime';
 
 interface DirectMessagesViewProps {
   currentUser: UserProfile;
@@ -44,6 +45,25 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
 
   const currentMessages = chatHistory[selectedUser.id] || [];
 
+  // Listen for real-time incoming direct messages from other connected users
+  useEffect(() => {
+    const socket = getSocket();
+    const handleIncomingDm = (data: { senderUserId: string; message: ChatMessage }) => {
+      if (!data || !data.message) return;
+      const otherId = data.senderUserId || data.message.sender.id;
+      setChatHistory((prev) => ({
+        ...prev,
+        [otherId]: [...(prev[otherId] || []), data.message],
+      }));
+      playSoundEffect('bell');
+    };
+
+    socket.on('dm:new_message', handleIncomingDm);
+    return () => {
+      socket.off('dm:new_message', handleIncomingDm);
+    };
+  }, []);
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
@@ -61,23 +81,14 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
       [selectedUser.id]: [...(prev[selectedUser.id] || []), newMsg],
     }));
 
-    setInputText('');
+    // Broadcast DM through real-time socket server
+    const socket = getSocket();
+    socket.emit('dm:send', {
+      targetUserId: selectedUser.id,
+      message: newMsg,
+    });
 
-    // Simulated reply after 1.5s
-    setTimeout(() => {
-      const replyMsg: ChatMessage = {
-        id: 'reply_' + Date.now(),
-        sender: selectedUser,
-        content: `أهلًا بك يا ${currentUser.nickname} 👑، تم استلام رسالتك بكل سرور! نتشرف بوجودك في ديواننا الصوتي.`,
-        type: 'text',
-        timestamp: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
-      };
-      setChatHistory((prev) => ({
-        ...prev,
-        [selectedUser.id]: [...(prev[selectedUser.id] || []), replyMsg],
-      }));
-      playSoundEffect('bell');
-    }, 1500);
+    setInputText('');
   };
 
   const handleSendGift = (gift: Gift) => {
@@ -105,6 +116,14 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
       ...prev,
       [selectedUser.id]: [...(prev[selectedUser.id] || []), giftMsg],
     }));
+
+    // Broadcast gift DM through real-time socket server
+    const socket = getSocket();
+    socket.emit('dm:send', {
+      targetUserId: selectedUser.id,
+      message: giftMsg,
+    });
+
     setShowGiftSelector(false);
   };
 

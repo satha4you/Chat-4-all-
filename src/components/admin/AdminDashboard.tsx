@@ -11,15 +11,19 @@ import {
   OwnerContactInfo,
   PushNotification,
   PushNotificationColor,
+  Gift as GiftType,
 } from '../../types';
 import {
   VIP_CONFIGS,
   INITIAL_BADGES,
+  INITIAL_GIFTS,
+  AVAILABLE_LOCAL_GIFT_ASSETS,
   OWNER_CONTACT_INFO,
   ADMIN_SECURITY_CONFIG,
   ARAB_COUNTRIES,
   ROYAL_SAMPLE_AVATARS,
 } from '../../data/initialData';
+import { Gift3DIcon } from '../common/Gift3DIcon';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
 import { VIPName } from '../common/VIPName';
@@ -79,6 +83,8 @@ interface AdminDashboardProps {
   reports: ModerationReport[];
   announcements: SystemAnnouncement[];
   contactInfo?: OwnerContactInfo;
+  gifts?: GiftType[];
+  onUpdateGifts?: (updatedGifts: GiftType[]) => void;
   onUpdateContactInfo?: (newInfo: Partial<OwnerContactInfo>) => void;
   onUpdateUser: (userId: string, updates: Partial<UserProfile>) => void;
   onUpdateRoom: (roomId: string, updates: Partial<VoiceRoom>) => void;
@@ -101,6 +107,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   reports,
   announcements,
   contactInfo = OWNER_CONTACT_INFO,
+  gifts,
+  onUpdateGifts,
   onUpdateContactInfo,
   onUpdateUser,
   onUpdateRoom,
@@ -115,7 +123,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onCloseAdmin,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'owner_profile' | 'overview' | 'vip_requests' | 'users' | 'rooms' | 'badges' | 'broadcast' | 'reports' | 'settings'
+    'owner_profile' | 'vip_requests' | 'gifts' | 'overview' | 'users' | 'rooms' | 'badges' | 'broadcast' | 'reports' | 'settings'
   >('owner_profile');
 
   // Find the owner profile user
@@ -177,6 +185,66 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [pushDuration, setPushDuration] = useState<number>(8);
   const [sendAsPushToast, setSendAsPushToast] = useState<boolean>(true);
   const [pushSentSuccess, setPushSentSuccess] = useState<boolean>(false);
+
+  // Gifts management state
+  const activeGifts = gifts && gifts.length > 0 ? gifts : INITIAL_GIFTS;
+  const [giftSearchQuery, setGiftSearchQuery] = useState('');
+  const [editingGift, setEditingGift] = useState<GiftType | null>(null);
+  const [giftEditNameAr, setGiftEditNameAr] = useState('');
+  const [giftEditNameEn, setGiftEditNameEn] = useState('');
+  const [giftEditCoins, setGiftEditCoins] = useState<number>(100);
+  const [giftEditRarity, setGiftEditRarity] = useState<'common' | 'rare' | 'epic' | 'legendary'>('common');
+  const [giftSavedNotice, setGiftSavedNotice] = useState<string | null>(null);
+
+  const handleStartEditGift = (gift: GiftType) => {
+    setEditingGift(gift);
+    setGiftEditNameAr(gift.nameAr);
+    setGiftEditNameEn(gift.nameEn || '');
+    setGiftEditCoins(gift.coins);
+    setGiftEditRarity(gift.rarity);
+  };
+
+  const handleSaveGiftEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGift) return;
+
+    const updatedList = activeGifts.map((g) => {
+      if (g.id === editingGift.id) {
+        return {
+          ...g,
+          nameAr: giftEditNameAr.trim() || g.nameAr,
+          nameEn: giftEditNameEn.trim() || g.nameEn,
+          coins: Math.max(1, Number(giftEditCoins) || 1),
+          rarity: giftEditRarity,
+        };
+      }
+      return g;
+    });
+
+    if (onUpdateGifts) {
+      onUpdateGifts(updatedList);
+    }
+    playSoundEffect('vip_fanfare');
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.6 },
+    });
+    setGiftSavedNotice(`تم بنجاح تحديث وتثبيت اسم وسعر الهدية (${giftEditNameAr.trim() || editingGift.nameAr})!`);
+    setTimeout(() => setGiftSavedNotice(null), 3500);
+    setEditingGift(null);
+  };
+
+  const handleResetGiftsToDefault = () => {
+    if (window.confirm('هل تريد استعادة جميع أسماء وأسعار الهدايا إلى الوضع الافتراضي الأصلي؟')) {
+      if (onUpdateGifts) {
+        onUpdateGifts(INITIAL_GIFTS);
+      }
+      playSoundEffect('bell');
+      setGiftSavedNotice('تمت استعادة الهدايا إلى الأسماء والأسعار الافتراضية بنجاح.');
+      setTimeout(() => setGiftSavedNotice(null), 3500);
+    }
+  };
 
   // Contact settings state
   const [ownerWhatsApp, setOwnerWhatsApp] = useState(contactInfo.whatsappNumber || OWNER_CONTACT_INFO.whatsappNumber);
@@ -425,6 +493,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="flex gap-2 overflow-x-auto pb-2 border-b border-zinc-800">
         {[
           { id: 'owner_profile', label: '👑 ملف المالك', highlight: true },
+          { id: 'gifts', label: '🎁 إدارة وتعديل الهدايا والأسعار', highlight: true, count: activeGifts.length },
           { id: 'vip_requests', label: '👑 طلبات اشتراك VIP', count: pendingRequestsCount, highlight: true },
           { id: 'overview', label: '📊 الإحصائيات العامة' },
           { id: 'users', label: '👥 إدارة المستخدمين', count: users.length },
@@ -835,6 +904,266 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* TAB: Gifts Management */}
+      {activeTab === 'gifts' && (
+        <div className="space-y-6">
+          {/* Header Card */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-gradient-to-r from-amber-950/40 via-zinc-900 to-black border border-amber-500/30">
+            <div>
+              <h2 className="text-base font-black text-amber-300 flex items-center gap-2">
+                <Gift className="w-5 h-5 text-amber-400" />
+                التحكم بالهدايا والأسعار الملكية ({activeGifts.length} هدية متوفرة)
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                بصفتك مالك المنصة، يمكنك تغيير مسميات وأسعار وتصنيفات جميع الهدايا وحفظها فورياً في المنظومة.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleResetGiftsToDefault}
+              className="px-3.5 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-xs font-bold border border-zinc-700 transition-colors shrink-0"
+            >
+              استعادة الافتراضيات ↺
+            </button>
+          </div>
+
+          {/* Success Notice */}
+          {giftSavedNotice && (
+            <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs font-bold flex items-center gap-2 shadow-lg animate-fadeIn">
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{giftSavedNotice}</span>
+            </div>
+          )}
+
+          {/* Search filter */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="ابحث عن هدية بالاسم أو التصنيف..."
+                value={giftSearchQuery}
+                onChange={(e) => setGiftSearchQuery(e.target.value)}
+                className="w-full bg-[#0E0E12] border border-zinc-800 focus:border-amber-500/80 rounded-2xl px-4 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Gifts Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {activeGifts
+              .filter((g) => {
+                const q = giftSearchQuery.toLowerCase();
+                return (
+                  g.nameAr.toLowerCase().includes(q) ||
+                  g.nameEn.toLowerCase().includes(q) ||
+                  g.id.toLowerCase().includes(q) ||
+                  g.rarity.toLowerCase().includes(q)
+                );
+              })
+              .map((gift) => {
+                const isLegendary = gift.rarity === 'legendary';
+                const isEpic = gift.rarity === 'epic';
+                const isRare = gift.rarity === 'rare';
+
+                return (
+                  <div
+                    key={gift.id}
+                    className={`p-4 rounded-3xl border flex flex-col justify-between transition-all relative group ${
+                      isLegendary
+                        ? 'bg-gradient-to-b from-amber-950/30 to-zinc-950 border-amber-500/40 shadow-lg shadow-amber-950/20'
+                        : isEpic
+                        ? 'bg-gradient-to-b from-purple-950/20 to-zinc-950 border-purple-500/30'
+                        : isRare
+                        ? 'bg-gradient-to-b from-blue-950/20 to-zinc-950 border-blue-500/30'
+                        : 'bg-[#0E0E12] border-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    {/* Top Rarity Badge */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                          isLegendary
+                            ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black'
+                            : isEpic
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                            : isRare
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                            : 'bg-zinc-800 text-zinc-300'
+                        }`}
+                      >
+                        {isLegendary
+                          ? '👑 أسطورية'
+                          : isEpic
+                          ? '🌟 فاخرة وملحمية'
+                          : isRare
+                          ? '💎 نادرة'
+                          : '✨ شائعة'}
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-500">#{gift.id.replace('gift_', '')}</span>
+                    </div>
+
+                    {/* Icon preview */}
+                    <div className="my-2 flex flex-col items-center justify-center p-3 bg-black/40 rounded-2xl border border-zinc-800/60">
+                      <div className="w-16 h-16 flex items-center justify-center transition-transform group-hover:scale-110">
+                        {gift.icon && (gift.icon.startsWith('/') || gift.icon.startsWith('http') || gift.icon.startsWith('data:')) ? (
+                          <img src={gift.icon} alt={gift.nameAr} className="w-full h-full object-contain" />
+                        ) : (
+                          <Gift3DIcon giftId={gift.id} icon={gift.icon} size="lg" />
+                        )}
+                      </div>
+                      <div className="mt-2 text-center">
+                        <h4 className="text-sm font-black text-zinc-100">{gift.nameAr}</h4>
+                        <span className="text-[11px] text-zinc-400">{gift.nameEn}</span>
+                      </div>
+                    </div>
+
+                    {/* Current Price & Action */}
+                    <div className="mt-2 pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-amber-400 font-black text-sm">{gift.coins}</span>
+                        <span className="text-[11px] text-zinc-400">🪙 كوينز</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditGift(gift)}
+                        className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30 flex items-center gap-1 transition-colors"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>تعديل السعر والاسم</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Edit Gift Modal */}
+          {editingGift && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+              <div className="w-full max-w-md bg-[#121218] border border-amber-500/50 rounded-3xl p-6 shadow-2xl space-y-5 text-zinc-100 animate-scaleUp">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                      <Gift className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-amber-300">تعديل الهدية: {editingGift.nameAr}</h3>
+                      <p className="text-[11px] text-zinc-400">تغيير السعر بالكوينز والمسمى الرسمي</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingGift(null)}
+                    className="text-zinc-400 hover:text-white p-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Gift Visual Preview */}
+                <div className="flex items-center justify-center p-4 bg-black/40 rounded-2xl border border-zinc-800/80 gap-4">
+                  <div className="w-16 h-16 flex items-center justify-center drop-shadow-lg">
+                    {editingGift.icon && (editingGift.icon.startsWith('/') || editingGift.icon.startsWith('http') || editingGift.icon.startsWith('data:')) ? (
+                      <img src={editingGift.icon} alt={editingGift.nameAr} className="w-full h-full object-contain" />
+                    ) : (
+                      <Gift3DIcon giftId={editingGift.id} icon={editingGift.icon} size="lg" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-amber-300">المعاينة الحالية:</div>
+                    <div className="text-sm font-bold text-zinc-100">{giftEditNameAr || editingGift.nameAr}</div>
+                    <div className="text-xs text-amber-400 font-mono mt-0.5">{giftEditCoins} كوينز 🪙</div>
+                  </div>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSaveGiftEdit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                      اسم الهدية بالعربية (المعروض للمستخدمين):
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={giftEditNameAr}
+                      onChange={(e) => setGiftEditNameAr(e.target.value)}
+                      placeholder="مثال: يخت الملياردير الذهبي"
+                      className="w-full bg-[#08080C] border border-zinc-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                      اسم الهدية بالإنجليزية (اختياري):
+                    </label>
+                    <input
+                      type="text"
+                      value={giftEditNameEn}
+                      onChange={(e) => setGiftEditNameEn(e.target.value)}
+                      placeholder="مثال: Royal Billionaire Yacht"
+                      className="w-full bg-[#08080C] border border-zinc-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                        سعر الهدية (بالكوينز 🪙):
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        required
+                        value={giftEditCoins}
+                        onChange={(e) => setGiftEditCoins(Math.max(1, Number(e.target.value)))}
+                        className="w-full bg-[#08080C] border border-zinc-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-amber-400 font-mono font-bold focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                        درجة الندرة / الفخامة:
+                      </label>
+                      <select
+                        value={giftEditRarity}
+                        onChange={(e) => setGiftEditRarity(e.target.value as any)}
+                        className="w-full bg-[#08080C] border border-zinc-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-zinc-200 focus:outline-none"
+                      >
+                        <option value="common">✨ شائعة</option>
+                        <option value="rare">💎 نادرة</option>
+                        <option value="epic">🌟 فاخرة وملحمية</option>
+                        <option value="legendary">👑 أسطورية ملوكية</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-3 border-t border-zinc-800 flex items-center justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditingGift(null)}
+                      className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-colors"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:opacity-95 text-black text-xs font-black shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-transform active:scale-95"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>حفظ وتثبيت التعديل 💾</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

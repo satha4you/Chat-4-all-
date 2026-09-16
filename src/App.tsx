@@ -19,6 +19,7 @@ import {
   INITIAL_VIP_REQUESTS,
   INITIAL_REPORTS,
   INITIAL_ANNOUNCEMENTS,
+  INITIAL_GIFTS,
   VIP_CONFIGS,
   ADMIN_SECURITY_CONFIG,
   OWNER_CONTACT_INFO,
@@ -116,8 +117,9 @@ export default function App() {
     return INITIAL_USERS;
   });
 
-  // Persist user login session across visits so the user is never automatically logged out
-  // The user only logs out when they manually click logout
+  // Strictly require user login / account creation on first visit
+  // Do NOT automatically log in as the owner: currentUserId defaults to null if no saved user exists in localStorage
+  // Once a user (or owner) manually logs in, the session is persisted so they are never automatically logged out
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
     try {
       const saved = localStorage.getItem('royal_voice_current_user_id');
@@ -125,7 +127,7 @@ export default function App() {
     } catch (e) {
       console.warn(e);
     }
-    return 'user_owner';
+    return null;
   });
 
   const [rooms, setRooms] = useState<VoiceRoom[]>(() => {
@@ -160,6 +162,20 @@ export default function App() {
   const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>(() => {
     const saved = localStorage.getItem('royal_voice_announcements');
     return saved ? JSON.parse(saved) : INITIAL_ANNOUNCEMENTS;
+  });
+
+  // Gifts Economy (Persisted across sessions so owner edits are permanent)
+  const [gifts, setGifts] = useState<Gift[]>(() => {
+    const saved = localStorage.getItem('royal_voice_gifts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    return INITIAL_GIFTS;
   });
 
   // Owner Contact Information (Persisted across sessions)
@@ -296,6 +312,14 @@ export default function App() {
       console.warn(e);
     }
   }, [contactInfo]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('royal_voice_gifts', JSON.stringify(gifts));
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [gifts]);
 
   // Persist logged-in user session so user remains logged in across visits
   useEffect(() => {
@@ -605,6 +629,7 @@ export default function App() {
             room={activeVoiceRoom}
             currentUser={currentUser}
             allUsers={users}
+            gifts={gifts}
             onLeave={() => setActiveVoiceRoom(null)}
             onUserClick={(user) => setInspectedUser(user)}
             onUpdateRoom={(updated) => handleUpdateRoom(updated.id, updated)}
@@ -717,6 +742,8 @@ export default function App() {
               reports={reports}
               announcements={announcements}
               contactInfo={contactInfo}
+              gifts={gifts}
+              onUpdateGifts={(updatedGifts) => setGifts(updatedGifts)}
               onUpdateContactInfo={handleUpdateContactInfo}
               onUpdateUser={handleUpdateUser}
               onDeleteUser={handleDeleteUser}
@@ -753,6 +780,7 @@ export default function App() {
               users={users}
               onUserClick={(user) => setInspectedUser(user)}
               targetUser={targetDmUser}
+              gifts={gifts}
             />
           ) : activeTab === 'my_profile' ? (
             /* Detailed Profile View of Current User */
