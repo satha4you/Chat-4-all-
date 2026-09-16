@@ -10,6 +10,7 @@ import { MessageSquare, Send, Gift as GiftIcon, Sparkles, Check, CheckCheck, Cro
 import confetti from 'canvas-confetti';
 import { playSoundEffect } from '../../utils/soundEffects';
 import { getSocket } from '../../services/realtime';
+import { loadAllDirectMessages, saveAllDirectMessages } from '../../utils/directMessages';
 
 interface DirectMessagesViewProps {
   currentUser: UserProfile;
@@ -31,17 +32,38 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
   const [inputText, setInputText] = useState('');
   const [showGiftSelector, setShowGiftSelector] = useState(false);
 
-  const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>({
-    user_owner: [
-      {
-        id: 'dm_1',
-        sender: otherUsers[0] || currentUser,
-        content: 'مرحبًا بك في منصة ديوان VIP! يسعدنا تواجدك معنا، لأي استفسارات أو اشتراكات لا تتردد في مراسلتي.',
-        type: 'text',
-        timestamp: '10:30 ص',
-      },
-    ],
+  const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>(() => {
+    const saved = loadAllDirectMessages();
+    if (Object.keys(saved).length > 0) return saved;
+    return {
+      user_owner: [
+        {
+          id: 'dm_1',
+          sender: otherUsers[0] || currentUser,
+          content: 'مرحبًا بك في منصة ديوان VIP! يسعدنا تواجدك معنا، لأي استفسارات أو اشتراكات لا تتردد في مراسلتي.',
+          type: 'text',
+          timestamp: '10:30 ص',
+        },
+      ],
+    };
   });
+
+  // Sync to localStorage
+  useEffect(() => {
+    saveAllDirectMessages(chatHistory);
+  }, [chatHistory]);
+
+  // Sync across windows or admin events
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const refreshed = loadAllDirectMessages();
+      if (Object.keys(refreshed).length > 0) {
+        setChatHistory(refreshed);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const currentMessages = chatHistory[selectedUser.id] || [];
 
