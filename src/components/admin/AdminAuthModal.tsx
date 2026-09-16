@@ -94,7 +94,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               تسجيل الدخول بصلاحيات المالك العام 👑
             </h3>
             <p className="text-xs text-zinc-300 mt-1">
-              يتم تحويل حسابك فورًا إلى «المالك والأدمن العام» لتتحدث وتكتب وتدير المنصة
+              يتم تحويل حسابك فورًا إلى «المالك أحمد النهر» لتتحدث وتكتب وتدير المنصة
             </p>
           </div>
 
@@ -184,13 +184,13 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                 className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-transform active:scale-98"
               >
                 <LogIn className="w-4 h-4" />
-                <span>دخول كـ «المالك والأدمن العام» وتفعيل اللوحة</span>
+                <span>دخول كـ «المالك أحمد النهر» وتفعيل اللوحة</span>
               </button>
             </div>
 
             <div className="text-center pt-1">
               <p className="text-[11px] text-zinc-400">
-                البريد الافتراضي: <span className="text-amber-400 font-mono">Satha4you@gmail.com</span> | رمز المرور: <span className="text-amber-400 font-mono">admin8899</span>
+                الرمز السري المعتمد للمالك: <span className="text-amber-400 font-mono">admin8899</span>
               </p>
             </div>
           </form>

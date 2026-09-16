@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { VoiceRoom, UserProfile, RoomSeat, ChatMessage, Gift } from '../../types';
 import { AvatarWithFrame } from '../common/AvatarWithFrame';
 import { VIPBadge } from '../common/VIPBadge';
@@ -39,6 +39,8 @@ import {
   UserPlus,
   UserMinus,
   Edit3,
+  Check,
+  Search,
 } from 'lucide-react';
 import { RoomModeratorsModal } from './RoomModeratorsModal';
 import { EditRoomModal } from './EditRoomModal';
@@ -86,7 +88,22 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
       if (saved) {
         const parsed: ChatMessage[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((m) => !m.roomId || m.roomId === room.id);
+          return parsed
+            .filter((m) => !m.roomId || m.roomId === room.id)
+            .map((m) => {
+              if (m.type === 'gift' && m.content) {
+                return {
+                  ...m,
+                  content: m.content
+                    .replace(/\/?assets\/[^\s]+/gi, '')
+                    .replace(/https?:\/\/[^\s]+/gi, '')
+                    .replace(/[a-zA-Z0-9_\-\.\/]+\.(png|jpg|jpeg|svg|webp|gif)/gi, '')
+                    .replace(/\s+/g, ' ')
+                    .trim(),
+                };
+              }
+              return m;
+            });
         }
       }
     } catch (e) {
@@ -118,6 +135,86 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   const [hasRaisedHand, setHasRaisedHand] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [selectedSeatForGift, setSelectedSeatForGift] = useState<UserProfile | null>(room.host);
+  const [recipientFilterTab, setRecipientFilterTab] = useState<'all' | 'stage' | 'listeners'>('all');
+  const [recipientSearchQuery, setRecipientSearchQuery] = useState<string>('');
+
+  // Dynamic list of all room participants available to receive gifts right now
+  const allRoomParticipants = useMemo(() => {
+    const list: {
+      user: UserProfile;
+      category: 'host' | 'stage' | 'listener';
+      badgeText: string;
+      badgeBg: string;
+    }[] = [];
+    const seenIds = new Set<string>();
+
+    // 1. Room Host
+    if (room.host) {
+      list.push({
+        user: room.host,
+        category: 'host',
+        badgeText: '👑 مضيف الغرفة',
+        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      });
+      seenIds.add(room.host.id);
+    }
+
+    // 2. Stage seats
+    currentSeats.forEach((seat) => {
+      if (seat.user && !seenIds.has(seat.user.id)) {
+        list.push({
+          user: seat.user,
+          category: 'stage',
+          badgeText: `🎤 مقعد ${seat.seatIndex + 1}`,
+          badgeBg: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+        });
+        seenIds.add(seat.user.id);
+      }
+    });
+
+    // 3. Listeners & Audience
+    (room.listeners || []).forEach((u) => {
+      if (u && !seenIds.has(u.id)) {
+        const isMod = (room.moderators || []).includes(u.id);
+        list.push({
+          user: u,
+          category: 'listener',
+          badgeText: isMod ? '🛡️ مشرف' : '🎧 مستمع',
+          badgeBg: isMod
+            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+            : 'bg-zinc-800 text-zinc-300 border-zinc-700',
+        });
+        seenIds.add(u.id);
+      }
+    });
+
+    return list;
+  }, [room.host, currentSeats, room.listeners, room.moderators]);
+
+  const filteredRecipients = useMemo(() => {
+    return allRoomParticipants.filter((item) => {
+      if (recipientFilterTab === 'stage' && item.category === 'listener') return false;
+      if (recipientFilterTab === 'listeners' && item.category !== 'listener') return false;
+      if (recipientSearchQuery.trim()) {
+        const q = recipientSearchQuery.toLowerCase();
+        const matchName =
+          item.user.nickname.toLowerCase().includes(q) ||
+          (item.user.username && item.user.username.toLowerCase().includes(q));
+        if (!matchName) return false;
+      }
+      return true;
+    });
+  }, [allRoomParticipants, recipientFilterTab, recipientSearchQuery]);
+
+  // Fallback active recipient
+  const activeRecipient: UserProfile =
+    selectedSeatForGift ||
+    allRoomParticipants.find((p) => p.user.id !== currentUser.id)?.user ||
+    allRoomParticipants[0]?.user ||
+    room.host;
+
+  const activeRecipientOption = allRoomParticipants.find((p) => p.user.id === activeRecipient.id);
+
   const [selectedGiftItem, setSelectedGiftItem] = useState<Gift>(() => currentGifts[0] || INITIAL_GIFTS[0]);
   const [giftComboCount, setGiftComboCount] = useState<number>(1);
   const [giftFilterTab, setGiftFilterTab] = useState<'all' | 'common' | 'rare' | 'epic' | 'legendary'>('all');
@@ -708,7 +805,7 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
   };
 
   const handleSendGift = (gift: Gift, count: number = giftComboCount) => {
-    const receiver = selectedSeatForGift || room.host;
+    const receiver = selectedSeatForGift || activeRecipient || room.host;
     const giftEventId = 'gift_ev_' + Date.now();
     
     // 1. Launch dynamic confetti fireworks & synthesized sound effects
@@ -725,18 +822,29 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
     };
     setActiveGiftEvent(newGiftEvent);
 
-    // 3. Highlight target receiver seat on stage
+    // 3. Highlight target receiver seat on stage (faster 2.2s duration)
     setHighlightedSeatUserId(receiver.id);
     setTimeout(() => {
       setHighlightedSeatUserId((curr) => (curr === receiver.id ? null : curr));
-    }, 4800);
+    }, 2200);
 
-    // 4. Create rich chat record
+    // 4. Create rich chat record (strictly without English file paths)
+    const isIconPath = Boolean(
+      gift.icon &&
+        (gift.icon.startsWith('/') ||
+          gift.icon.startsWith('http') ||
+          gift.icon.includes('.png') ||
+          gift.icon.includes('.svg') ||
+          gift.icon.includes('.webp') ||
+          gift.icon.includes('.jpg'))
+    );
+    const emojiSuffix = isIconPath ? '' : ` ${gift.icon}`;
+
     const giftMsg: ChatMessage = {
       id: 'msg_gift_' + Date.now(),
       roomId: room.id,
       sender: currentUser,
-      content: `أرسل ${count > 1 ? `x${count} ` : ''}${gift.nameAr} ${gift.icon} إلى ${receiver.nickname}!`,
+      content: `أرسل ${count > 1 ? `x${count} ` : ''}«${gift.nameAr}»${emojiSuffix} إلى ${receiver.nickname}!`,
       type: 'gift',
       giftData: {
         gift,
@@ -1134,7 +1242,18 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                               <div className="absolute -inset-1.5 rounded-full ring-4 ring-amber-400/70 shadow-[0_0_20px_rgba(245,158,11,0.85)] pointer-events-none animate-pulse" />
                               <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-yellow-400 text-white text-[9px] font-black shadow-xl animate-bounce flex items-center gap-1 whitespace-nowrap z-25 border border-white/40">
                                 <span>🎁</span>
-                                <span>{activeGiftEvent?.gift.icon || '✨'}</span>
+                                {activeGiftEvent?.gift.icon &&
+                                (activeGiftEvent.gift.icon.startsWith('/') ||
+                                  activeGiftEvent.gift.icon.startsWith('http') ||
+                                  activeGiftEvent.gift.icon.includes('.png')) ? (
+                                  <img
+                                    src={activeGiftEvent.gift.icon}
+                                    alt=""
+                                    className="w-3.5 h-3.5 object-contain inline-block"
+                                  />
+                                ) : (
+                                  <span>{activeGiftEvent?.gift.icon || '✨'}</span>
+                                )}
                                 <span>هدية</span>
                               </div>
                             </>
@@ -1264,7 +1383,6 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
           onPreviewGiftEffect={handlePreviewGiftEffect}
           onClearChat={handleClearChat}
           onOpenGiftModal={() => {
-            setSelectedSeatForGift(room.host);
             setShowGiftModal(true);
           }}
           isModerator={isModerator}
@@ -1339,13 +1457,13 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              setSelectedSeatForGift(room.host);
               setShowGiftModal(true);
             }}
-            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-rose-400 border border-zinc-800"
-            title="إهداء المضيف"
+            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-500/20 to-amber-500/20 hover:from-rose-500/30 hover:to-amber-500/30 text-rose-400 hover:text-amber-300 border border-amber-500/30 flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+            title="إرسال هدية لأحد الحاضرين في الغرفة"
           >
-            <GiftIcon className="w-4 h-4" />
+            <GiftIcon className="w-4 h-4 text-rose-400" />
+            <span className="hidden sm:inline">إرسال هدية</span>
           </button>
           <button
             onClick={onLeave}
@@ -1363,18 +1481,17 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
             
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-amber-500/30 text-rose-400">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-2xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-amber-500/30 text-rose-400 shadow-sm">
                   <GiftIcon className="w-5 h-5 text-rose-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm md:text-base font-bold text-zinc-100 flex items-center gap-1.5">
-                    <span>إرسال هدية إلى:</span>
-                    <span className="text-amber-300 font-black">{selectedSeatForGift?.nickname || room.host.nickname}</span>
+                  <h3 className="text-sm md:text-base font-black text-zinc-100 flex items-center gap-2">
+                    <span>إرسال هدية في الغرفة</span>
                   </h3>
                   <span className="text-[11px] text-zinc-400 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-amber-400" />
-                    <span>تأثيرات بصرية وانطلاق قصاصات وألعاب نارية فورية</span>
+                    <span>اختر أي مستقبل من الحاضرين في الغرفة الآن</span>
                   </span>
                 </div>
               </div>
@@ -1387,32 +1504,131 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto py-3 space-y-4">
-              {/* Recipient select */}
-              <div>
-                <label className="text-xs font-bold text-zinc-400 block mb-1.5">اختر مستلم الهدية من المسرح:</label>
-                <div className="flex items-center gap-2 overflow-x-auto py-1">
-                  {currentSeats
-                    .filter((s) => s.user)
-                    .map((s) => {
-                      const isSelected = selectedSeatForGift?.id === s.user?.id;
-                      return (
-                        <button
-                          key={s.seatIndex}
-                          onClick={() => setSelectedSeatForGift(s.user!)}
-                          className={`px-3 py-1.5 rounded-2xl border text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
-                            isSelected
-                              ? 'border-amber-400 bg-amber-500/20 text-amber-300 shadow-md ring-1 ring-amber-400/50'
-                              : 'border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400'
-                          }`}
-                        >
-                          <AvatarWithFrame user={s.user!} size="xs" showCrown={false} />
-                          <span className="truncate max-w-[85px]">{s.user?.nickname}</span>
-                          {s.seatIndex === 0 && (
-                            <span className="text-[9px] px-1 rounded bg-amber-500/30 text-amber-300">مضيف</span>
+              {/* Active Chosen Recipient Showcase Card */}
+              <div className="p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border border-amber-500/40 flex items-center justify-between gap-3 shadow-inner">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <AvatarWithFrame user={activeRecipient} size="sm" showCrown={false} />
+                  <div className="min-w-0">
+                    <div className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
+                      <span>المستقبل المختار للهدية:</span>
+                    </div>
+                    <div className="text-sm font-black text-white truncate" title={activeRecipient.nickname}>
+                      {activeRecipient.nickname}
+                    </div>
+                    <div className="text-[10px] text-zinc-400 truncate">
+                      {activeRecipientOption?.badgeText || (activeRecipient.id === room.host.id ? '👑 مضيف الغرفة' : 'عضو في الغرفة')}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-black text-xs flex items-center gap-1 shrink-0">
+                  <Check className="w-3.5 h-3.5 text-amber-400" />
+                  <span>محدد</span>
+                </div>
+              </div>
+
+              {/* Recipient Selector: Everyone in the room at that moment */}
+              <div className="bg-zinc-900/40 rounded-2xl border border-zinc-800/80 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-amber-400" />
+                    <span>اختر مستقبل الهدية من الموجودين في الغرفة ({allRoomParticipants.length}):</span>
+                  </label>
+                </div>
+
+                {/* Filter Tabs & Search */}
+                <div className="flex items-center gap-1.5 mb-2.5 overflow-x-auto pb-1">
+                  <button
+                    type="button"
+                    onClick={() => setRecipientFilterTab('all')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      recipientFilterTab === 'all'
+                        ? 'bg-amber-400 text-black font-black shadow-md'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                    }`}
+                  >
+                    الكل ({allRoomParticipants.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecipientFilterTab('stage')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      recipientFilterTab === 'stage'
+                        ? 'bg-amber-400 text-black font-black shadow-md'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                    }`}
+                  >
+                    المسرح والمايك ({allRoomParticipants.filter((p) => p.category !== 'listener').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecipientFilterTab('listeners')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      recipientFilterTab === 'listeners'
+                        ? 'bg-amber-400 text-black font-black shadow-md'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                    }`}
+                  >
+                    المستمعين ({allRoomParticipants.filter((p) => p.category === 'listener').length})
+                  </button>
+                </div>
+
+                {/* Search if there are multiple participants */}
+                {allRoomParticipants.length > 3 && (
+                  <div className="relative mb-2.5">
+                    <Search className="w-3.5 h-3.5 text-zinc-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={recipientSearchQuery}
+                      onChange={(e) => setRecipientSearchQuery(e.target.value)}
+                      placeholder="ابحث بالاسم عن أي حاضر في الغرفة..."
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pr-8 pl-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/50"
+                    />
+                  </div>
+                )}
+
+                {/* Recipients List Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[140px] overflow-y-auto pr-1">
+                  {filteredRecipients.map((item) => {
+                    const isSelected = activeRecipient.id === item.user.id;
+                    const isMe = item.user.id === currentUser.id;
+
+                    return (
+                      <button
+                        key={item.user.id}
+                        type="button"
+                        onClick={() => setSelectedSeatForGift(item.user)}
+                        className={`p-2 rounded-xl border text-right transition-all flex items-center gap-2 cursor-pointer ${
+                          isSelected
+                            ? 'bg-amber-500/20 border-amber-400 text-amber-200 ring-2 ring-amber-400/40 shadow-md'
+                            : 'bg-zinc-900/80 hover:bg-zinc-800 border-zinc-800 text-zinc-300'
+                        }`}
+                      >
+                        <div className="relative shrink-0">
+                          <AvatarWithFrame user={item.user} size="xs" showCrown={false} />
+                          {isSelected && (
+                            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 text-black flex items-center justify-center shadow">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
                           )}
-                        </button>
-                      );
-                    })}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold truncate flex items-center gap-1">
+                            <span className="truncate">{item.user.nickname}</span>
+                            {isMe && <span className="text-[8px] text-zinc-500 font-normal shrink-0">(أنت)</span>}
+                          </div>
+                          <div className="text-[9px] text-zinc-400 truncate mt-0.5">
+                            {item.badgeText}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {filteredRecipients.length === 0 && (
+                    <div className="col-span-full py-4 text-center text-xs text-zinc-500">
+                      لا يوجد أعضاء مطابقين للبحث
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1725,28 +1941,44 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                         </div>
                       </div>
 
-                      {isRoomManager && !isUserHost && (
-                        <div>
-                          {isMod ? (
-                            <button
-                              onClick={() => handleRemoveModerator(s.user!.id)}
-                              className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[10px] font-bold border border-rose-500/40"
-                              title="إلغاء الإشراف"
-                            >
-                              إلغاء
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleAssignModerator(s.user!)}
-                              className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black flex items-center gap-1 shadow-sm"
-                              title="تعيين كمشرف للغرفة"
-                            >
-                              <UserPlus className="w-3 h-3" />
-                              <span>مشرف</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAudienceModal(false);
+                            setSelectedSeatForGift(s.user!);
+                            setShowGiftModal(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[10px] font-bold border border-rose-500/30 flex items-center gap-1"
+                          title={`إرسال هدية إلى ${s.user!.nickname}`}
+                        >
+                          <GiftIcon className="w-3 h-3 text-rose-400" />
+                          <span>إهداء</span>
+                        </button>
+
+                        {isRoomManager && !isUserHost && (
+                          <div>
+                            {isMod ? (
+                              <button
+                                onClick={() => handleRemoveModerator(s.user!.id)}
+                                className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[10px] font-bold border border-rose-500/40"
+                                title="إلغاء الإشراف"
+                              >
+                                إلغاء
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleAssignModerator(s.user!)}
+                                className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black flex items-center gap-1 shadow-sm"
+                                title="تعيين كمشرف للغرفة"
+                              >
+                                <UserPlus className="w-3 h-3" />
+                                <span>مشرف</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -1782,28 +2014,44 @@ export const LiveVoiceRoom: React.FC<LiveVoiceRoomProps> = ({
                       </div>
                     </div>
 
-                    {isRoomManager && !isUserHost && (
-                      <div>
-                        {isMod ? (
-                          <button
-                            onClick={() => handleRemoveModerator(user.id)}
-                            className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[10px] font-bold border border-rose-500/40"
-                            title="إلغاء الإشراف"
-                          >
-                            إلغاء
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleAssignModerator(user)}
-                            className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black flex items-center gap-1 shadow-sm"
-                            title="تعيين كمشرف للغرفة"
-                          >
-                            <UserPlus className="w-3 h-3" />
-                            <span>مشرف</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAudienceModal(false);
+                          setSelectedSeatForGift(user);
+                          setShowGiftModal(true);
+                        }}
+                        className="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[10px] font-bold border border-rose-500/30 flex items-center gap-1"
+                        title={`إرسال هدية إلى ${user.nickname}`}
+                      >
+                        <GiftIcon className="w-3 h-3 text-rose-400" />
+                        <span>إهداء</span>
+                      </button>
+
+                      {isRoomManager && !isUserHost && (
+                        <div>
+                          {isMod ? (
+                            <button
+                              onClick={() => handleRemoveModerator(user.id)}
+                              className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[10px] font-bold border border-rose-500/40"
+                              title="إلغاء الإشراف"
+                            >
+                              إلغاء
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleAssignModerator(user)}
+                              className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black flex items-center gap-1 shadow-sm"
+                              title="تعيين كمشرف للغرفة"
+                            >
+                              <UserPlus className="w-3 h-3" />
+                              <span>مشرف</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

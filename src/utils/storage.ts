@@ -113,11 +113,33 @@ export function loadAllUsers(initialUsers: UserProfile[]): UserProfile[] {
         const ind = localStorage.getItem(`royal_voice_user_${u.id}`);
         if (ind) {
           const parsedInd = JSON.parse(ind);
-          return { ...u, ...parsedInd };
+          u = { ...u, ...parsedInd };
         }
       } catch {
         // Ignore
       }
+
+      // Enforce owner credentials and clean bio without emails
+      if (u.id === 'user_owner') {
+        u.username = 'vip';
+        u.nickname = 'المالك أحمد النهر';
+        if (!u.avatar || u.avatar.includes('unsplash.com') || u.avatar.includes('ui-avatars')) {
+          u.avatar = '/assets/owner_avatar.jpg';
+        }
+        if (u.bio) {
+          u.bio = u.bio
+            .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, '')
+            .replace(/\|\s*البريد المعتمد:[^|]+/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          if (!u.bio || u.bio.length < 5) {
+            u.bio = 'المالك والمؤسس الرسمي لمنصة ديوان VIP الصوتية | للإشراف والاشتراكات والتطوير';
+          }
+        } else {
+          u.bio = 'المالك والمؤسس الرسمي لمنصة ديوان VIP الصوتية | للإشراف والاشتراكات والتطوير';
+        }
+      }
+
       return u;
     });
 

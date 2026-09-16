@@ -455,14 +455,18 @@ export const LuxuryGamingProfile: React.FC<LuxuryGamingProfileProps> = ({
               </div>
             </div>
 
-            {/* User Bio / Royal Quote with Theme Border */}
+            {/* User Bio / Royal Quote with Theme Border (strictly guaranteed to hide any email) */}
             {user.bio && (
               <div 
                 className="p-2.5 sm:p-3 rounded-2xl bg-black/40 border text-xs text-zinc-300 leading-relaxed max-w-xl text-right transition-colors duration-500"
                 style={{ borderColor: `${activeTheme.primary}45` }}
               >
                 <span className="font-bold ml-1.5 text-sm" style={{ color: activeTheme.light }}>"</span>
-                {user.bio}
+                {user.bio
+                  .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, '')
+                  .replace(/\|\s*البريد المعتمد:[^|]+/gi, '')
+                  .replace(/\s+/g, ' ')
+                  .trim()}
                 <span className="font-bold mr-1.5 text-sm" style={{ color: activeTheme.light }}>"</span>
               </div>
             )}

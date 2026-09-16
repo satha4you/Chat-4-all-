@@ -84,11 +84,11 @@ export const GoldenDragonEffect: React.FC<GoldenDragonEffectProps> = ({ event })
           style={{ animation: 'sonicShockwave 1.2s cubic-bezier(0.1, 0.8, 0.2, 1) 0.5s forwards' }}
         />
 
-        {/* The Golden Dragon Entity crossing screen in 2.2s */}
+        {/* The Golden Dragon Entity crossing screen in 1.1s */}
         <div
           className="absolute left-0 top-1/2 -translate-y-1/2"
           style={{
-            animation: 'goldenDragonTraverse 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            animation: 'goldenDragonTraverse 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             perspective: '1200px',
             transformStyle: 'preserve-3d',
           }}

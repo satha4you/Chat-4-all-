@@ -21,6 +21,7 @@ interface EditProfileModalProps {
 }
 
 const SAMPLE_AVATARS = [
+  '/assets/owner_avatar.jpg',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',

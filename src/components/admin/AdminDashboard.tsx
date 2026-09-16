@@ -409,7 +409,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         message: broadcastContent.trim(),
         colorScheme: pushColorScheme,
         timestamp: new Date().toISOString(),
-        senderName: currentUser.nickname || currentUser.username || 'المالك والأدمن العام',
+        senderName: currentUser.nickname || currentUser.username || 'المالك أحمد النهر',
         senderRole: 'المالك 👑',
         senderAvatar: currentUser.avatar,
         durationSeconds: pushDuration,
@@ -453,7 +453,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#141414] border border-amber-500/30 text-[11px] text-amber-300 font-medium">
                 <Mail className="w-3 h-3 text-amber-400" />
                 <span className="font-mono text-zinc-200">{ADMIN_SECURITY_CONFIG.adminEmail}</span>
-                <span className="text-[10px] text-emerald-400 font-bold">(المالك والأدمن العام)</span>
+                <span className="text-[10px] text-emerald-400 font-bold">(المالك أحمد النهر)</span>
               </div>
 
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#141414] border border-zinc-800 text-[11px] text-zinc-400 font-medium">
@@ -745,7 +745,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     required
                     value={ownerNickname}
                     onChange={(e) => setOwnerNickname(e.target.value)}
-                    placeholder="مثال: المالك والأدمن العام 👑"
+                    placeholder="مثال: المالك أحمد النهر"
                     className="w-full bg-[#050505] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -1896,7 +1896,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                 <Crown className="w-4 h-4 text-amber-400" />
-                بيانات المالك والأدمن العام المعتمدة
+                بيانات المالك أحمد النهر المعتمدة
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold">
                 موثق رسميًا

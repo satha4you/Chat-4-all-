@@ -124,7 +124,7 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
       const isOwner = targetUser.role === 'owner' || isOwnerEmail;
       setSuccessMsg(
         isOwner
-          ? 'تم التحقق بنجاح! مرحبًا بسيادة المالك والأدمن العام 👑'
+          ? 'تم التحقق بنجاح! مرحبًا بسيادة المالك أحمد النهر ✨'
           : `أهلًا بك مجددًا يا ${targetUser.nickname}! تم التحقق بنجاح ✨`
       );
 
@@ -383,10 +383,10 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
                   <Crown className="w-5 h-5 text-amber-400" />
                   <div>
                     <div className="text-xs font-bold text-amber-300 flex items-center gap-1">
-                      <span>حساب المالك والأدمن العام</span>
+                      <span>حساب المالك أحمد النهر</span>
                       <VerifiedBadge type="gold" size="xs" />
                     </div>
-                    <span className="text-[10px] text-zinc-400 font-mono">{ADMIN_SECURITY_CONFIG.adminEmail}</span>
+                    <span className="text-[10px] text-zinc-400 font-mono">@vip</span>
                   </div>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">

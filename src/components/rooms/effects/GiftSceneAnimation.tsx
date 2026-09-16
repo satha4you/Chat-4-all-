@@ -23,7 +23,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
             </div>
 
             {/* Racing Supercar Element */}
-            <div className="absolute top-4 -right-64 animate-[driveBy_2.8s_cubic-bezier(0.2,0.8,0.2,1)_forwards] flex items-center gap-3">
+            <div className="absolute top-4 -right-64 animate-[driveBy_1.2s_cubic-bezier(0.16,1,0.3,1)_forwards] flex items-center gap-3">
               {/* Exhaust Flames & Tire Smoke */}
               <div className="flex items-center gap-1">
                 <div className="w-8 h-8 rounded-full bg-orange-500/60 blur-md animate-ping" />
@@ -100,7 +100,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
         <div className="absolute inset-0 pointer-events-none z-35 overflow-hidden flex items-center justify-center">
           <div className="relative w-full h-full">
             {/* Dragon S-Curve swooping across screen */}
-            <div className="absolute top-1/4 -left-72 animate-[dragonFly_4.2s_ease-in-out_forwards] flex items-center">
+            <div className="absolute top-1/4 -left-72 animate-[dragonFly_1.5s_ease-in-out_forwards] flex items-center">
               <div className="relative w-80 h-64 filter drop-shadow-[0_0_30px_rgba(239,68,68,0.9)]">
                 <svg className="w-full h-full" viewBox="0 0 320 200" fill="none">
                   <defs>
@@ -159,7 +159,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
       return (
         <div className="absolute inset-0 pointer-events-none z-35 overflow-hidden">
           <div className="relative w-full h-full">
-            <div className="absolute -top-32 -right-32 animate-[falconSwoop_3.2s_ease-out_forwards]">
+            <div className="absolute -top-32 -right-32 animate-[falconSwoop_1.2s_ease-out_forwards]">
               <div className="relative flex flex-col items-center drop-shadow-[0_0_25px_rgba(56,189,248,0.85)]">
                 <svg className="w-56 h-44" viewBox="0 0 200 160" fill="none">
                   <defs>
@@ -215,7 +215,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
             <div className="absolute w-60 h-60 rounded-full border border-amber-400/60 animate-pulse" />
 
             {/* Left Sword */}
-            <div className="absolute animate-[swordClashLeft_1.2s_ease-out_forwards] origin-bottom-right">
+            <div className="absolute animate-[swordClashLeft_0.5s_ease-out_forwards] origin-bottom-right">
               <svg className="w-40 h-40" viewBox="0 0 120 120" fill="none">
                 <path
                   d="M20 100 L30 110 L45 95 L35 85 Z"
@@ -242,7 +242,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
             </div>
 
             {/* Right Sword */}
-            <div className="absolute animate-[swordClashRight_1.2s_ease-out_forwards] origin-bottom-left">
+            <div className="absolute animate-[swordClashRight_0.5s_ease-out_forwards] origin-bottom-left">
               <svg className="w-40 h-40 transform scale-x-[-1]" viewBox="0 0 120 120" fill="none">
                 <path
                   d="M20 100 L30 110 L45 95 L35 85 Z"
@@ -274,7 +274,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
       return (
         <div className="absolute inset-x-0 bottom-20 pointer-events-none z-35 overflow-hidden h-40">
           <div className="relative w-full h-full">
-            <div className="absolute top-2 -right-52 animate-[driveBy_3.5s_ease-in-out_forwards] flex items-center gap-3">
+            <div className="absolute top-2 -right-52 animate-[driveBy_1.2s_ease-in-out_forwards] flex items-center gap-3">
               <div className="relative flex items-center">
                 <span className="text-7xl filter drop-shadow-[0_0_20px_rgba(245,158,11,0.9)] animate-bounce">
                   🐎
@@ -297,7 +297,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
       return (
         <div className="absolute inset-0 pointer-events-none z-35 overflow-hidden">
           <div className="relative w-full h-full">
-            <div className="absolute -bottom-24 -left-32 animate-[jetFly_2.8s_cubic-bezier(0.1,0.7,0.1,1)_forwards] flex items-center gap-2">
+            <div className="absolute -bottom-24 -left-32 animate-[jetFly_1.1s_cubic-bezier(0.16,1,0.3,1)_forwards] flex items-center gap-2">
               {/* Jet SVG with dual sonic vapor trails */}
               <div className="relative flex items-center drop-shadow-[0_0_30px_rgba(56,189,248,0.9)]">
                 <span className="text-8xl transform rotate-45">✈️</span>
@@ -522,7 +522,7 @@ export const GiftSceneAnimation: React.FC<GiftSceneAnimationProps> = ({ gift, co
           <div className="absolute w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-blue-600/20 via-purple-600/25 to-pink-500/20 blur-3xl animate-pulse" />
 
           {/* Ascending Rocket */}
-          <div className="relative flex flex-col items-center animate-[driveBy_3.5s_cubic-bezier(0.2,0.8,0.2,1)_forwards]">
+          <div className="relative flex flex-col items-center animate-[driveBy_1.2s_cubic-bezier(0.16,1,0.3,1)_forwards]">
             {/* Rocket Ship SVG */}
             <div className="relative w-48 h-64 drop-shadow-[0_0_35px_rgba(59,130,246,0.9)]">
               <svg className="w-full h-full" viewBox="0 0 160 220" fill="none">

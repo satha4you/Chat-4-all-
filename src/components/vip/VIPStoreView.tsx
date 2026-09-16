@@ -240,17 +240,13 @@ export const VIPStoreView: React.FC<VIPStoreViewProps> = ({
                 طريقة الاشتراك والتفعيل اليدوي المباشر
               </h3>
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
-                المالك والأدمن العام
+                المالك أحمد النهر
               </span>
             </div>
             <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
               {contactInfo.customInstructionsAr || OWNER_CONTACT_INFO.customInstructionsAr}
             </p>
             <div className="flex items-center gap-3 mt-2 text-xs text-zinc-300 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-zinc-900/90 px-2.5 py-1 rounded-lg border border-zinc-800">
-                <span className="text-zinc-500">البريد:</span>
-                <span className="font-mono text-amber-400 font-bold">{contactInfo.email || OWNER_CONTACT_INFO.email}</span>
-              </div>
               {contactInfo.whatsappNumber && (
                 <div className="flex items-center gap-1.5 bg-zinc-900/90 px-2.5 py-1 rounded-lg border border-zinc-800">
                   <span className="text-zinc-500">واتساب:</span>

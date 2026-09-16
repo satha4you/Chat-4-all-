@@ -432,10 +432,10 @@ export const INITIAL_GIFTS: Gift[] = [
 export const INITIAL_USERS: UserProfile[] = [
   {
     id: 'user_owner',
-    username: 'satha4you',
-    nickname: 'المالك والأدمن العام 👑',
+    username: 'vip',
+    nickname: 'المالك أحمد النهر',
     email: 'Satha4you@gmail.com',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+    avatar: '/assets/owner_avatar.jpg',
     role: 'owner',
     vipTier: 'mythic',
     mythicFrameId: 'mythic_sovereign_wings',
@@ -449,8 +449,8 @@ export const INITIAL_USERS: UserProfile[] = [
     },
     level: 99,
     xp: 99999,
-    bio: 'المالك والأدمن العام الرسمي لمنصة ديوان VIP | البريد المعتمد: Satha4you@gmail.com | للإشراف والاشتراكات والتطوير',
-    status: 'متواجد في لوحة الإدارة العامة 👑 | مرحبًا بالجميع',
+    bio: 'المالك والمؤسس الرسمي لمنصة ديوان VIP الصوتية | للإشراف والاشتراكات والتطوير',
+    status: 'متواجد في ديوان VIP | مرحبًا بالجميع',
     followersCount: 15000,
     followingCount: 1,
     joinedDate: '2024-01-01',
@@ -598,7 +598,7 @@ export const INITIAL_ANNOUNCEMENTS: SystemAnnouncement[] = [
 export const ADMIN_SECURITY_CONFIG = {
   adminEmail: 'Satha4you@gmail.com',
   adminPasscode: 'a5552366',
-  ownerTitleAr: 'المالك والأدمن العام',
+  ownerTitleAr: 'المالك أحمد النهر',
 };
 
 export const OWNER_CONTACT_INFO: OwnerContactInfo = {

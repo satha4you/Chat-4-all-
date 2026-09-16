@@ -395,7 +395,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     className="w-full py-2 px-3 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-black flex items-center justify-center gap-2 shadow-md transition-all"
                   >
                     <Crown className="w-4 h-4 text-black" />
-                    <span>معلومات التواصل الرسمية مع المالك (واتساب / بريد / تيليجرام)</span>
+                    <span>معلومات التواصل الرسمية مع المالك (واتساب / تيليجرام)</span>
                   </button>
                 </div>
               )}

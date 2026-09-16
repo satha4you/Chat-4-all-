@@ -87,8 +87,29 @@ export default function App() {
           const merged = [...filtered, ...INITIAL_USERS.filter((u) => !existingIds.has(u.id))];
           const owner = merged.find((u) => u.id === 'user_owner');
           if (owner) {
-            // Keep user's custom edits (avatar, nickname, bio, status, country, etc.) intact!
-            // Only ensure vital admin privileges are maintained without wiping profile customizations
+            // Apply owner identity requested by user
+            owner.username = 'vip';
+            owner.nickname = 'المالك أحمد النهر';
+
+            // Set permanent owner photo requested by user (allows changing later via profile edit)
+            if (!owner.avatar || owner.avatar.includes('unsplash.com') || owner.avatar.includes('ui-avatars')) {
+              owner.avatar = '/assets/owner_avatar.jpg';
+            }
+
+            // Strictly remove any email from bio
+            if (owner.bio) {
+              owner.bio = owner.bio
+                .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, '')
+                .replace(/\|\s*البريد المعتمد:[^|]+/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+              if (!owner.bio || owner.bio.length < 5) {
+                owner.bio = 'المالك والمؤسس الرسمي لمنصة ديوان VIP الصوتية | للإشراف والاشتراكات والتطوير';
+              }
+            } else {
+              owner.bio = 'المالك والمؤسس الرسمي لمنصة ديوان VIP الصوتية | للإشراف والاشتراكات والتطوير';
+            }
+
             if (!owner.email) owner.email = 'Satha4you@gmail.com';
             if (!owner.passcode) owner.passcode = ADMIN_SECURITY_CONFIG.adminPasscode;
             owner.role = 'owner';
@@ -641,6 +662,7 @@ export default function App() {
             currentUser={currentUser}
             isOpen={!!inspectedUser}
             onClose={() => setInspectedUser(null)}
+            onSendGift={handleSendGiftToUser}
             onOpenEditProfile={(target) => {
               setUserToEdit(target || currentUser);
               setShowEditProfile(true);

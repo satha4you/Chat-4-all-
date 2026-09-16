@@ -87,7 +87,7 @@ export const RoyalFalconEffect: React.FC<RoyalFalconEffectProps> = ({ event }) =
         <div
           className="absolute right-0 top-1/4"
           style={{
-            animation: 'royalFalconGlide 2.0s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            animation: 'royalFalconGlide 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             perspective: '1200px',
             transformStyle: 'preserve-3d',
           }}

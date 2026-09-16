@@ -99,10 +99,20 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
       origin: { y: 0.6 }
     });
 
+    const isPath = Boolean(
+      gift.icon &&
+        (gift.icon.startsWith('/') ||
+          gift.icon.startsWith('http') ||
+          gift.icon.includes('.png') ||
+          gift.icon.includes('.svg') ||
+          gift.icon.includes('.webp'))
+    );
+    const emojiStr = isPath ? '' : ` ${gift.icon}`;
+
     const giftMsg: ChatMessage = {
       id: 'dm_gift_' + Date.now(),
       sender: currentUser,
-      content: `أرسل لك هدية ${gift.nameAr} ${gift.icon} بقيمة ${gift.coins} كوينز!`,
+      content: `أرسل لك هدية «${gift.nameAr}»${emojiStr} بقيمة ${gift.coins} كوينز!`,
       type: 'gift',
       giftData: {
         gift,
@@ -187,8 +197,8 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
               يمكنك استقبال رسائل الأعضاء، الرد على الاستفسارات، وإهداء الهدايا الفاخرة مباشرة هنا.
             </p>
           </div>
-          <div className="px-4 py-2 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-[11px] text-zinc-400">
-            ✉️ البريد الرسمي المعتمد للتواصل: <span className="text-amber-300 font-mono">Satha4you@gmail.com</span>
+          <div className="px-4 py-2 rounded-2xl bg-zinc-900/80 border border-amber-500/20 text-[11px] text-amber-300">
+            👑 حساب المالك الرسمي العام • @{currentUser.username}
           </div>
         </div>
       ) : (
@@ -264,11 +274,27 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
               const isMine = msg.sender.id === currentUser.id;
 
               if (msg.type === 'gift') {
+                const cleanContent = msg.content
+                  .replace(/\/?assets\/[^\s]+/gi, '')
+                  .replace(/https?:\/\/[^\s]+/gi, '')
+                  .replace(/[a-zA-Z0-9_\-\.\/]+\.(png|jpg|jpeg|svg|webp|gif)/gi, '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+
+                const iconUrl = msg.giftData?.gift?.icon;
+                const isImg = Boolean(
+                  iconUrl && (iconUrl.startsWith('/') || iconUrl.startsWith('http') || iconUrl.includes('.png'))
+                );
+
                 return (
                   <div key={msg.id} className="flex justify-center my-2">
                     <div className="p-2.5 rounded-2xl bg-gradient-to-r from-rose-950/80 via-amber-950/60 to-zinc-900 border border-amber-500/40 text-xs font-bold text-amber-300 flex items-center gap-2 shadow">
-                      <GiftIcon className="w-4 h-4 text-rose-400" />
-                      <span>{msg.content}</span>
+                      {isImg ? (
+                        <img src={iconUrl} alt="" className="w-5 h-5 object-contain" />
+                      ) : (
+                        <GiftIcon className="w-4 h-4 text-rose-400" />
+                      )}
+                      <span>{cleanContent}</span>
                     </div>
                   </div>
                 );

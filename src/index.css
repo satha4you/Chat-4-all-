@@ -107,17 +107,60 @@ font-family: "AbdoLine", sans-serif;
   animation: float-crown 2.5s ease-in-out infinite;
 }
 
-/* Interactive Gift Animations */
+/* Interactive Gift Animations - Fast & Dynamic Velocity */
+@keyframes giftFastPopIn {
+  0% {
+    transform: scale(0.25) translateY(24px);
+    opacity: 0;
+    filter: brightness(1.8) drop-shadow(0 0 25px rgba(245, 158, 11, 0.9));
+  }
+  65% {
+    transform: scale(1.08) translateY(-4px);
+    opacity: 1;
+    filter: brightness(1.15);
+  }
+  85% {
+    transform: scale(0.98) translateY(1px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes giftFastPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 16px rgba(245, 158, 11, 0.35));
+  }
+  50% {
+    transform: scale(1.055);
+    filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 30px rgba(245, 158, 11, 0.7));
+  }
+}
+
+.gift-fast-entry {
+  animation: giftFastPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.gift-fast-pulse {
+  animation: giftFastPulse 0.9s ease-in-out infinite;
+  will-change: transform;
+}
+
 @keyframes driveBy {
   0% {
     transform: translateX(100vw) scale(0.85);
     opacity: 0;
   }
-  15% {
+  12% {
     opacity: 1;
   }
-  60% {
-    transform: translateX(-40vw) scale(1.1);
+  55% {
+    transform: translateX(-30vw) scale(1.1);
     opacity: 1;
   }
   100% {
@@ -131,15 +174,15 @@ font-family: "AbdoLine", sans-serif;
     transform: translate(-100vw, 40px) scale(0.6) rotate(12deg);
     opacity: 0;
   }
-  20% {
+  18% {
     opacity: 1;
     transform: translate(-20vw, -30px) scale(0.9) rotate(-8deg);
   }
-  55% {
+  50% {
     opacity: 1;
     transform: translate(30vw, 50px) scale(1.15) rotate(10deg);
   }
-  85% {
+  80% {
     opacity: 1;
     transform: translate(80vw, -20px) scale(1) rotate(-5deg);
   }
@@ -154,11 +197,11 @@ font-family: "AbdoLine", sans-serif;
     transform: translate(80vw, -50vh) scale(0.5) rotate(-25deg);
     opacity: 0;
   }
-  30% {
+  25% {
     opacity: 1;
     transform: translate(15vw, -5vh) scale(1.1) rotate(-10deg);
   }
-  70% {
+  65% {
     opacity: 1;
     transform: translate(-30vw, 25vh) scale(1.2) rotate(5deg);
   }
@@ -173,7 +216,7 @@ font-family: "AbdoLine", sans-serif;
     transform: translate(-120px, -100px) rotate(-45deg) scale(0.6);
     opacity: 0;
   }
-  60% {
+  55% {
     transform: translate(10px, 10px) rotate(15deg) scale(1.15);
     opacity: 1;
   }
@@ -188,7 +231,7 @@ font-family: "AbdoLine", sans-serif;
     transform: translate(120px, -100px) rotate(45deg) scale(0.6);
     opacity: 0;
   }
-  60% {
+  55% {
     transform: translate(-10px, 10px) rotate(-15deg) scale(1.15);
     opacity: 1;
   }
@@ -203,11 +246,11 @@ font-family: "AbdoLine", sans-serif;
     transform: translate(-40vw, 60vh) scale(0.5) rotate(35deg);
     opacity: 0;
   }
-  30% {
+  25% {
     opacity: 1;
     transform: translate(20vw, 10vh) scale(1.1) rotate(38deg);
   }
-  70% {
+  65% {
     opacity: 1;
     transform: translate(70vw, -40vh) scale(1.25) rotate(40deg);
   }

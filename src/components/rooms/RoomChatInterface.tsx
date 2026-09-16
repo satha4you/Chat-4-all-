@@ -133,6 +133,20 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
           roomMessages.map((msg) => {
             // Gift Card
             if (msg.type === 'gift') {
+              // Strictly sanitize and strip out any English file paths (e.g., /assets/gifts/lion.png)
+              const cleanContent = msg.content
+                .replace(/\/?assets\/[^\s]+/gi, '')
+                .replace(/https?:\/\/[^\s]+/gi, '')
+                .replace(/[a-zA-Z0-9_\-\.\/]+\.(png|jpg|jpeg|svg|webp|gif)/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+              const iconUrl = msg.giftData?.gift?.icon;
+              const isImage = Boolean(
+                iconUrl &&
+                  (iconUrl.startsWith('/') || iconUrl.startsWith('http') || iconUrl.includes('.png'))
+              );
+
               return (
                 <div
                   key={msg.id}
@@ -144,10 +158,18 @@ export const RoomChatInterface: React.FC<RoomChatInterfaceProps> = ({
                   className="p-2.5 rounded-xl bg-gradient-to-r from-rose-950/70 via-amber-950/50 to-zinc-900 border border-amber-500/40 shadow cursor-pointer hover:border-amber-400 transition-all hover:scale-[1.01] group"
                   title="انقر لتشغيل التأثير البصري والألعاب النارية"
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <div className="flex items-center gap-1.5 text-amber-300 font-bold text-[11px]">
-                      <GiftIcon className="w-3.5 h-3.5 text-rose-400 group-hover:scale-125 transition-transform" />
-                      <span>{msg.content}</span>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 text-amber-300 font-bold text-[11px] min-w-0">
+                      {isImage ? (
+                        <img
+                          src={iconUrl}
+                          alt=""
+                          className="w-5 h-5 object-contain shrink-0 filter drop-shadow group-hover:scale-110 transition-transform"
+                        />
+                      ) : (
+                        <GiftIcon className="w-3.5 h-3.5 text-rose-400 group-hover:scale-125 transition-transform shrink-0" />
+                      )}
+                      <span className="truncate">{cleanContent}</span>
                     </div>
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5 shrink-0">
                       <span>🎆</span>
