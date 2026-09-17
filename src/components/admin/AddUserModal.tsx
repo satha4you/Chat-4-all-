@@ -20,6 +20,7 @@ import { VIPBadge } from '../common/VIPBadge';
 import { VerifiedBadge, VerificationType } from '../common/VerifiedBadge';
 import { compressImage } from '../../utils/storage';
 import { playSoundEffect } from '../../utils/soundEffects';
+import { saveProfileToSupabase } from '../../services/supabase';
 import confetti from 'canvas-confetti';
 
 interface AddUserModalProps {
@@ -188,6 +189,9 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
       spread: 70,
       origin: { y: 0.4 },
     });
+
+    // Save profile to Supabase
+    saveProfileToSupabase(newUser);
 
     onAddUser(newUser, sendMessage ? messageText.trim() : undefined);
     setIsSubmitting(false);

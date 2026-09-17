@@ -46,6 +46,13 @@ import { VIPName } from './components/common/VIPName';
 import { GoldFallingParticles } from './components/common/GoldFallingParticles';
 import { PushNotificationToast } from './components/common/PushNotificationToast';
 import { playSoundEffect } from './utils/soundEffects';
+import {
+  supabase,
+  supabaseSignOut,
+  saveProfileToSupabase,
+  fetchAllProfilesFromSupabase,
+  fetchProfileFromSupabase,
+} from './services/supabase';
 import { 
   Crown, 
   Mic, 
@@ -277,6 +284,100 @@ export default function App() {
     };
   }, []);
 
+  // Supabase Auth and Profiles Synchronization
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Listen to Supabase Auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user && isMounted) {
+        const userEmail = session.user.email?.toLowerCase();
+        if (userEmail) {
+          // Check local users list first
+          setUsers((prev) => {
+            const match = prev.find((u) => u.email && u.email.toLowerCase() === userEmail);
+            if (match) {
+              setCurrentUserId((curr) => curr || match.id);
+            }
+            return prev;
+          });
+
+          // Fetch profile from Supabase database ('profiles' table)
+          try {
+            const remoteProfile = await fetchProfileFromSupabase(userEmail);
+            if (remoteProfile && isMounted) {
+              setUsers((prev) => {
+                const idx = prev.findIndex(
+                  (u) => u.email?.toLowerCase() === userEmail || u.id === remoteProfile.id
+                );
+                if (idx >= 0) {
+                  const updated = [...prev];
+                  updated[idx] = { ...prev[idx], ...remoteProfile };
+                  return updated;
+                }
+                return [remoteProfile, ...prev];
+              });
+              setCurrentUserId((curr) => curr || remoteProfile.id);
+            }
+          } catch (e) {
+            console.warn('[Supabase] Auth sync error:', e);
+          }
+        }
+      }
+    });
+
+    // 2. Fetch all profiles from Supabase database to synchronize cloud accounts
+    fetchAllProfilesFromSupabase()
+      .then((remoteProfiles) => {
+        if (remoteProfiles && remoteProfiles.length > 0 && isMounted) {
+          setUsers((prev) => {
+            const prevMap = new Map<string, UserProfile>(prev.map((u) => [u.id, u]));
+            const prevEmailMap = new Map<string, UserProfile>(
+              prev.filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u])
+            );
+
+            remoteProfiles.forEach((rp: UserProfile) => {
+              // Ensure owner identity remains strictly intact
+              if (rp.id === 'user_owner' || rp.username === 'vip') {
+                rp.username = 'vip';
+                rp.nickname = 'المالك أحمد النهر';
+                rp.role = 'owner';
+                rp.avatar = '/assets/owner_avatar.jpg';
+              }
+
+              const existingById = prevMap.get(rp.id);
+              if (existingById) {
+                prevMap.set(rp.id, { ...existingById, ...rp });
+              } else if (rp.email && prevEmailMap.has(rp.email.toLowerCase())) {
+                const existingByEmail = prevEmailMap.get(rp.email.toLowerCase())!;
+                prevMap.set(existingByEmail.id, { ...existingByEmail, ...rp });
+              } else {
+                prevMap.set(rp.id, rp);
+              }
+            });
+
+            const merged = Array.from(prevMap.values());
+            try {
+              localStorage.setItem('royal_voice_users', JSON.stringify(merged));
+            } catch (e) {
+              console.warn(e);
+            }
+            return merged;
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('[Supabase] Profiles sync note:', err);
+      });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
   // Sync with LocalStorage
   useEffect(() => {
     try {
@@ -367,17 +468,28 @@ export default function App() {
     } catch (e) {
       console.warn(e);
     }
+    // Save profile to Supabase database
+    saveProfileToSupabase(user);
     setShowEmailLogin(false);
   };
 
   const handleRegisterNewUser = (newUser: UserProfile) => {
     setUsers((prev) => [newUser, ...prev]);
+    // Save new profile to Supabase database
+    saveProfileToSupabase(newUser);
   };
 
   // Handlers
   const handleUpdateUser = (userId: string, updates: Partial<UserProfile>) => {
+    let updatedProfile: UserProfile | undefined;
     setUsers((prev) => {
-      const nextUsers = prev.map((u) => (u.id === userId ? { ...u, ...updates } : u));
+      const nextUsers = prev.map((u) => {
+        if (u.id === userId) {
+          updatedProfile = { ...u, ...updates };
+          return updatedProfile;
+        }
+        return u;
+      });
       try {
         localStorage.setItem('royal_voice_users', JSON.stringify(nextUsers));
       } catch (e) {
@@ -385,6 +497,11 @@ export default function App() {
       }
       return nextUsers;
     });
+
+    // Save profile changes to Supabase database
+    if (updatedProfile) {
+      saveProfileToSupabase(updatedProfile);
+    }
 
     // If inspected user is updated
     setInspectedUser((prev) => (prev && prev.id === userId ? { ...prev, ...updates } : prev));
@@ -594,6 +711,7 @@ export default function App() {
     setCurrentUserId(null);
     localStorage.removeItem('royal_voice_current_user_id');
     localStorage.removeItem('royal_voice_has_email_login');
+    supabaseSignOut();
     setShowAdmin(false);
     setActiveVoiceRoom(null);
     setShowEmailLogin(true);

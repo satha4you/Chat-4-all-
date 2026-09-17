@@ -3,7 +3,6 @@ import { ActiveGiftEvent } from './GiftCelebrationOverlay';
 import { AvatarWithFrame } from '../../common/AvatarWithFrame';
 import { VIPName } from '../../common/VIPName';
 import { Gift3DIcon } from '../../common/Gift3DIcon';
-import { playSoundEffect } from '../../../utils/soundEffects';
 
 interface GoldenDragonEffectProps {
   event: ActiveGiftEvent;
@@ -14,21 +13,14 @@ export const GoldenDragonEffect: React.FC<GoldenDragonEffectProps> = ({ event })
   const [showRumble, setShowRumble] = useState(false);
 
   useEffect(() => {
-    // Play majestic dragon roar sound effect immediately
-    playSoundEffect('dragon_roar');
-    
+    // Silent gift effect per user instruction - no sound effects
     // Quick screen vibration / rumble at peak swoop
     const rumbleTimer = setTimeout(() => {
       setShowRumble(true);
     }, 600);
 
-    const fanfareTimer = setTimeout(() => {
-      playSoundEffect('vip_fanfare');
-    }, 1100);
-
     return () => {
       clearTimeout(rumbleTimer);
-      clearTimeout(fanfareTimer);
     };
   }, []);
 

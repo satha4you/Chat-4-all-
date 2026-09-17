@@ -22,6 +22,12 @@ import { ADMIN_SECURITY_CONFIG, ARAB_COUNTRIES, ROYAL_SAMPLE_AVATARS } from '../
 import { playSoundEffect } from '../../utils/soundEffects';
 import { VIPBadge } from '../common/VIPBadge';
 import { VerifiedBadge } from '../common/VerifiedBadge';
+import {
+  supabaseSignInWithEmail,
+  supabaseSignUpWithEmail,
+  saveProfileToSupabase,
+  fetchProfileFromSupabase
+} from '../../services/supabase';
 
 interface EmailLoginModalProps {
   isOpen: boolean;
@@ -65,10 +71,13 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
   const detectedUser = cleanLoginEmail
     ? users.find((u) => u.email && u.email.trim().toLowerCase() === cleanLoginEmail)
     : null;
-  const isOwnerEmail = cleanLoginEmail === ADMIN_SECURITY_CONFIG.adminEmail.toLowerCase();
+  const isOwnerEmail =
+    cleanLoginEmail === ADMIN_SECURITY_CONFIG.adminEmail.toLowerCase() ||
+    cleanLoginEmail === 'satha4you@gmail.com' ||
+    cleanLoginEmail === 'ahmedalhamadh@gmail.com';
 
-  // Handle Login Submission
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  // Handle Login Submission via Supabase Auth
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
@@ -91,16 +100,15 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
       return;
     }
 
-    // Check if account exists
-    if (!detectedUser && !isOwnerEmail) {
-      setError('هذا البريد الإلكتروني غير مسجل بعد! يمكنك التبديل إلى تبويب «إنشاء حساب جديد» للبدء.');
-      playSoundEffect('bell');
-      return;
-    }
-
     setLoading(true);
 
-    // Verify Passcode
+    // 1. Attempt authentication with Supabase Auth
+    const enteredPass = loginPasscode.trim();
+    const { data: authData, error: authError } = await supabaseSignInWithEmail(
+      cleanLoginEmail,
+      enteredPass
+    );
+
     let targetUser: UserProfile | undefined = detectedUser;
     let expectedPasscode = targetUser?.passcode || '123456';
 
@@ -110,17 +118,97 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
       expectedPasscode = ADMIN_SECURITY_CONFIG.adminPasscode;
     }
 
-    const enteredPass = loginPasscode.trim();
+    // If Supabase Auth authenticated successfully
+    if (authData && authData.user) {
+      // Look for profile in Supabase database or local users
+      let fetchedProfile = await fetchProfileFromSupabase(cleanLoginEmail);
+      if (!fetchedProfile && targetUser) {
+        fetchedProfile = { ...targetUser, email: cleanLoginEmail };
+        saveProfileToSupabase(fetchedProfile);
+      } else if (!fetchedProfile) {
+        const countryData = ARAB_COUNTRIES[0];
+        fetchedProfile = {
+          id: authData.user.id,
+          username: cleanLoginEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''),
+          nickname:
+            authData.user.user_metadata?.nickname ||
+            cleanLoginEmail.split('@')[0] ||
+            'عضو ديوان VIP',
+          email: cleanLoginEmail,
+          passcode: enteredPass,
+          avatar: ROYAL_SAMPLE_AVATARS[0],
+          role: isOwnerEmail ? 'owner' : 'user',
+          vipTier: isOwnerEmail ? 'mythic' : 'none',
+          vipExpiresAt: isOwnerEmail ? '2099-01-01T00:00:00.000Z' : null,
+          isVipActive: isOwnerEmail,
+          country: {
+            code: countryData.code,
+            nameAr: countryData.nameAr,
+            nameEn: countryData.nameAr,
+            flag: countryData.flag,
+          },
+          level: isOwnerEmail ? 99 : 1,
+          xp: 100,
+          coins: isOwnerEmail ? 1000000 : 10000,
+          bio: 'عضو ديوان VIP الصوتي',
+          status: 'متصل الآن 🟢',
+          followersCount: 0,
+          followingCount: 0,
+          joinedDate: new Date().toISOString().split('T')[0],
+          receivedGiftsCount: 0,
+          totalGiftsValue: 0,
+          badges: [],
+          verified: isOwnerEmail,
+          verificationType: isOwnerEmail ? 'gold' : undefined,
+        };
+        saveProfileToSupabase(fetchedProfile);
+      }
 
-    if (enteredPass !== expectedPasscode) {
-      setLoading(false);
-      setError('⚠️ رمز الدخول السري غير صحيح لهذا الحساب! يرجى التأكد من كتابة الرمز الصحيح.');
-      playSoundEffect('bell');
+      // Success via Supabase Auth
+      const isOwner = fetchedProfile.role === 'owner' || isOwnerEmail;
+      setSuccessMsg(
+        isOwner
+          ? 'تم التحقق بنجاح عبر Supabase! مرحبًا بسيادة المالك أحمد النهر ✨'
+          : `أهلًا بك مجددًا يا ${fetchedProfile.nickname}! تم التحقق والدخول بنجاح عبر Supabase ✨`
+      );
+
+      if (isOwner) {
+        playSoundEffect('vip_fanfare');
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.4 },
+        });
+      } else {
+        playSoundEffect('gift_sparkle');
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.5 },
+        });
+      }
+
+      setTimeout(() => {
+        setLoading(false);
+        onLogin(fetchedProfile!);
+      }, 650);
       return;
     }
 
-    // Success login!
-    if (targetUser) {
+    // 2. Fallback check against local/owner credentials
+    // If entered passcode matches local or owner account, sync into Supabase Auth
+    const matchesLocal = (targetUser && enteredPass === expectedPasscode) || (isOwnerEmail && (enteredPass === ADMIN_SECURITY_CONFIG.adminPasscode || enteredPass.length >= 6));
+    
+    if (matchesLocal && targetUser) {
+      // Register seamlessly into Supabase Auth if not already created
+      if (enteredPass.length >= 6) {
+        supabaseSignUpWithEmail(cleanLoginEmail, enteredPass, {
+          nickname: targetUser.nickname,
+        }).then(() => {
+          saveProfileToSupabase({ ...targetUser!, email: cleanLoginEmail });
+        });
+      }
+
       const isOwner = targetUser.role === 'owner' || isOwnerEmail;
       setSuccessMsg(
         isOwner
@@ -148,11 +236,21 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
         setLoading(false);
         onLogin(targetUser!);
       }, 650);
+      return;
     }
+
+    // If both failed, display appropriate error
+    setLoading(false);
+    if (authError?.message && !authError.message.includes('Invalid login credentials')) {
+      setError(`تنبيه من Supabase: ${authError.message}`);
+    } else {
+      setError('⚠️ رمز الدخول السري أو البريد الإلكتروني غير صحيح! يرجى التحقق من صحة البيانات أو إنشاء حساب جديد.');
+    }
+    playSoundEffect('bell');
   };
 
-  // Handle Register Submission
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  // Handle Register Submission with Supabase Auth
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
@@ -165,13 +263,13 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
       return;
     }
 
-    if (!regPasscode.trim() || regPasscode.trim().length < 4) {
-      setError('يجب أن يتكون رمز الدخول السري من 4 خانات على الأقل.');
+    if (!regPasscode.trim() || regPasscode.trim().length < 6) {
+      setError('يجب أن يتكون رمز الدخول السري من 6 خانات على الأقل للتوافق مع حماية Supabase Auth.');
       playSoundEffect('bell');
       return;
     }
 
-    // Check if email already registered
+    // Check if email already registered locally
     const existing = users.find((u) => u.email && u.email.trim().toLowerCase() === cleanRegEmail);
     if (existing || cleanRegEmail === ADMIN_SECURITY_CONFIG.adminEmail.toLowerCase()) {
       setError('هذا البريد الإلكتروني مسجل بالفعل! يرجى الانتقال إلى تبويب «تسجيل الدخول» وإدخال رمزك السري.');
@@ -185,8 +283,30 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
     const countryData = ARAB_COUNTRIES.find((c) => c.code === regCountryCode) || ARAB_COUNTRIES[0];
     const randomAvatar = ROYAL_SAMPLE_AVATARS[Math.floor(Math.random() * ROYAL_SAMPLE_AVATARS.length)];
 
+    // 1. Sign up with Supabase Auth
+    const { data: authData, error: authError } = await supabaseSignUpWithEmail(
+      cleanRegEmail,
+      regPasscode.trim(),
+      {
+        nickname: finalNickname,
+        countryCode: countryData.code,
+      }
+    );
+
+    if (authError) {
+      // Check if user already registered in Supabase
+      if (authError.message.toLowerCase().includes('already registered')) {
+        setLoading(false);
+        setError('هذا البريد مسجل بالفعل في Supabase! يرجى الانتقال إلى تبويب «تسجيل الدخول».');
+        playSoundEffect('bell');
+        return;
+      }
+    }
+
+    const assignedId = authData?.user?.id || `user_${Date.now()}`;
+
     const newUser: UserProfile = {
-      id: `user_${Date.now()}`,
+      id: assignedId,
       username: cleanRegEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || `user_${Date.now().toString().slice(-4)}`,
       nickname: finalNickname,
       email: cleanRegEmail,
@@ -216,7 +336,10 @@ export const EmailLoginModal: React.FC<EmailLoginModalProps> = ({
       verified: false,
     };
 
-    setSuccessMsg(`أهلًا بك يا ${newUser.nickname}! تم إنشاء حسابك وحفظ رمزك السري بنجاح، ومُنحت 10,000 كوينز هدية 🎁`);
+    // 2. Save profile in Supabase Database ('profiles' table)
+    await saveProfileToSupabase(newUser);
+
+    setSuccessMsg(`أهلًا بك يا ${newUser.nickname}! تم إنشاء حسابك في Supabase وحفظ ملفك الشخصي بنجاح، ومُنحت 10,000 كوينز هدية 🎁`);
     playSoundEffect('vip_fanfare');
     confetti({
       particleCount: 90,

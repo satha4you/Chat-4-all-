@@ -3,7 +3,6 @@ import { ActiveGiftEvent } from './GiftCelebrationOverlay';
 import { AvatarWithFrame } from '../../common/AvatarWithFrame';
 import { VIPName } from '../../common/VIPName';
 import { Gift3DIcon } from '../../common/Gift3DIcon';
-import { playSoundEffect } from '../../../utils/soundEffects';
 
 interface RoyalFalconEffectProps {
   event: ActiveGiftEvent;
@@ -14,20 +13,13 @@ export const RoyalFalconEffect: React.FC<RoyalFalconEffectProps> = ({ event }) =
   const [showSonicFlash, setShowSonicFlash] = useState(false);
 
   useEffect(() => {
-    // Play majestic falcon cry sound effect immediately
-    playSoundEffect('falcon_cry');
-
+    // Silent gift effect per user instruction - no sound effects
     const flashTimer = setTimeout(() => {
       setShowSonicFlash(true);
     }, 500);
 
-    const sparkleTimer = setTimeout(() => {
-      playSoundEffect('gift_sparkle');
-    }, 900);
-
     return () => {
       clearTimeout(flashTimer);
-      clearTimeout(sparkleTimer);
     };
   }, []);
 

@@ -114,7 +114,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({
   };
 
   const handleSendGift = (gift: Gift) => {
-    playSoundEffect('gift_sparkle');
+    // Silent per user request - no gift sound effects
     confetti({
       particleCount: 70,
       spread: 60,
